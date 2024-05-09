@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+service ADQLParser {
+  rpc Parse(ADQLRequest) returns (SQLResponse) {}
+}
+
+message ADQLRequest {
+  string query = 1;
+}
+
+message SQLResponse {
+  string error = 1;
+  string parsed = 2;
+}

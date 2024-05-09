@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "adqlparserpy"
+version = "0.1.0"
+description = ""
+authors = ["Diego Rodriguez <diegorodriguezmancini@gmail.com>"]
+readme = "README.md"
+packages = [
+    { include = "grpc_server", from = "src" },
+    { include = "core", from = "src" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.8" # adql only supports python 3.8 :(
+numpy = { version = "*" }
+astropy = { version = "*" }
+grpcio = "^1.63.0"
+grpcio-tools = "^1.63.0"
+adql = "^1.0.6"
+sqlparse = "^0.5.0"
+
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.2.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
