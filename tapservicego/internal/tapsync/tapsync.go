@@ -1,6 +1,8 @@
 package tapsync
 
 import (
+	"ataps/internal/sqlparser"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"slices"
@@ -8,26 +10,30 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func handleSQLQuery(c *gin.Context, query string) interface {} {
-	return nil
-}
 
-func parseSQLResult(sqlResult interface{}, format string) (interface{}, error) {
+func setResponse(c *gin.Context, sqlResult []map[string]interface{}, format string) error {
 	switch format {
 	case "votable":
-		return nil, nil
+		return nil 
 	case "csv":
-		return nil, nil
+		result, err := sqlparser.ParseCSV(sqlResult)
+		if err != nil {
+			return err
+		}
+		// TODO: make actual csv response
+		c.String(http.StatusOK, result)
 	case "tsv":
-		return nil, nil
+		return nil
 	case "fits":
-		return nil, nil
+		return nil
 	case "text":
-		return nil, nil
+		return nil
 	case "html":
-		return nil, nil
+		return nil
+	default:
+		return fmt.Errorf("Invalid format")
 	}
-	return nil, fmt.Errorf("Could not parse result")
+	return nil
 }
 
 
@@ -68,7 +74,7 @@ func getFormatResponseFormat(c *gin.Context) string {
 	return ""
 }
 
-func syncPostHandler(c *gin.Context) {
+func (service *TapSyncService) SyncPostHandler(c *gin.Context) {
 	lang := c.PostForm("LANG")
 	switch lang {
 	case "PSQL":
@@ -83,23 +89,44 @@ func syncPostHandler(c *gin.Context) {
 		if format == "" {
 			return
 		}
-		sqlResult := handleSQLQuery(c, query)
-		parsedResult, err := parseSQLResult(sqlResult, format)
+		sqlResult, err := HandleSQLQuery(query, service.DB)
 		if err != nil {
 			c.XML(http.StatusInternalServerError, gin.H{
-				"error": fmt.Sprintf("Could not parse result"),
+				"error": fmt.Sprintf("Could not execute query"),
 			})
 			return
 		}
-		c.XML(http.StatusOK, parsedResult)
+		err = setResponse(c, sqlResult, format)
+		if err != nil {
+			c.XML(http.StatusInternalServerError, gin.H{
+				"error": fmt.Sprintf("Could not set response"),
+			})
+			return
+		}
 	default:
 		caseInvalidLang(c)
 		return
 	}
 }
 
-func TapSyncService() *gin.Engine {
-	r := gin.Default()
-	r.POST("/sync", syncPostHandler)
-	return r
+type TapSyncService struct {
+	Router *gin.Engine
+	DB *sql.DB
+	config *Config
+}
+
+func NewTapSyncService() *TapSyncService {
+	config := GetConfig()
+	db, err := GetDB(config.DatabaseURL)
+	if err != nil {
+		panic(err)
+	}
+	router := gin.Default()
+	service := &TapSyncService{
+		Router: router,
+		DB: db,
+		config: config,
+	}
+	service.Router.POST("/sync", service.SyncPostHandler)
+	return service
 }
