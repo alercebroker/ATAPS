@@ -1,7 +1,6 @@
 package sqlparser
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,19 +9,15 @@ import (
 func TestConvertRowToString(t *testing.T) {
         row := map[string]interface{}{"name": "Alice", "age": 30}
         expected := []string{"Alice", "30"}
-        actual := convertRowValuesToString(row)
-        if !reflect.DeepEqual(actual, expected) {
-                t.Errorf("Expected %v, got %v", expected, actual)
-        }
+        actual := convertRowValuesToString(row, []string{"name", "age"})
+        assert.Equal(t, expected, actual)
 }
 
 func TestGetHeaders(t *testing.T) {
         row := map[string]interface{}{"name": "Alice", "age": 30}
-        expected := []string{"name", "age"}
+        expected := []string{"age", "name"}
         actual := getHeaders(row)
-        if !reflect.DeepEqual(actual, expected) {
-                t.Errorf("Expected %v, got %v", expected, actual)
-        }
+        assert.Equal(t, expected, actual)
 }
 
 func TestParseCSV(t *testing.T) {
@@ -30,14 +25,12 @@ func TestParseCSV(t *testing.T) {
                 {"name": "Alice", "age": 30},
                 {"name": "Bob", "age": 25},
         }
-        expected := "name,age\nAlice,30\nBob,25\n"
+        expected := "age,name\n30,Alice\n25,Bob\n"
         actual, err := ParseCSV(data)
         if err != nil {
                 t.Errorf("Error parsing CSV: %v", err)
         }
-        if actual != expected {
-                assert.Equal(t, expected, actual)
-        }
+        assert.Equal(t, expected, actual)
 }
 
 func TestParseTSV(t *testing.T) {
@@ -45,12 +38,10 @@ func TestParseTSV(t *testing.T) {
                 {"name": "Alice", "age": 30},
                 {"name": "Bob", "age": 25},
         }
-        expected := "name\tage\nAlice\t30\nBob\t25\n"
+        expected := "age\tname\n30\tAlice\n25\tBob\n"
         actual, err := ParseTSV(data)
         if err != nil {
                 t.Errorf("Error parsing TSV: %v", err)
         }
-        if actual != expected {
-                assert.Equal(t, expected, actual)
-        }
+        assert.Equal(t, expected, actual)
 }

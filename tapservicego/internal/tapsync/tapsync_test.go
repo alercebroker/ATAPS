@@ -3,153 +3,180 @@ package tapsync
 import (
 	"ataps/internal/testhelpers"
 	"context"
-	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 )
 
-type TAPSyncTestSuite struct {
-	suite.Suite
-	dbcontainer *postgres.PostgresContainer
-	context    context.Context
-}
+var container *postgres.PostgresContainer
+var ctx context.Context
 
-func (suite *TAPSyncTestSuite) SetupSuite() {
-	ctx := context.Background()
-	suite.context = ctx
-	dbcontainer, err := testhelpers.CreatePostgresContainer(ctx)
+func globalSetup() {
+	var err error
+	ctx = context.Background()
+	container, err = testhelpers.CreatePostgresContainer(ctx)
 	if err != nil {
-		suite.T().Fatal(err)
+		log.Fatal(err)
 	}
-	suite.dbcontainer = dbcontainer
-	connStr, err := dbcontainer.ConnectionString(ctx)
+	var connStr string
+	connStr, err = container.ConnectionString(ctx)
 	if err != nil {
-		suite.T().Fatal(err)
+		log.Fatal(err)
 	}
-	fmt.Println(connStr)
 	os.Setenv("DATABASE_URL", connStr)
 }
 
-func (suite *TAPSyncTestSuite) TearDownSuite() {
-	testhelpers.CleanUpContainer(suite.context, suite.dbcontainer)	
+func globalTeardown() {
+	testhelpers.CleanUpContainer(ctx, container)
 }
 
-func (suite *TAPSyncTestSuite) TestLangSuccess() {
-	service := NewTapSyncService()
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL&&QUERY=SELECT 'test'"))
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	service.Router.ServeHTTP(w, req)
-
-	suite.Equal(http.StatusOK, w.Code)
+func TestMain(m *testing.M) {
+	globalSetup()
+	code := m.Run()
+	globalTeardown()
+	os.Exit(code)
 }
 
-func (suite *TAPSyncTestSuite) TestLangFailure() {
-	service := NewTapSyncService()
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/sync", strings.NewReader(""))
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	service.Router.ServeHTTP(w, req)
-
-	suite.Equal(http.StatusBadRequest, w.Code)
+func TestQueryParams(t *testing.T) {
+	t.Run("TestLangSuccess", func(t *testing.T) {
+		service := NewTapSyncService()
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL&&QUERY=SELECT 'test'"))
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		service.Router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+	t.Run("TestLangFailure", func(t *testing.T) {
+		service := NewTapSyncService()
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/sync", strings.NewReader(""))
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		service.Router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Contains(t, w.Body.String(), "Invalid LANG ")
+	})
+	t.Run("TestFormatSuccess", func(t *testing.T) {
+		service := NewTapSyncService()
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL&&FORMAT=votable&&QUERY=SELECT 'test'"))
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		service.Router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+	t.Run("TestResponseFormatSuccess", func(t *testing.T) {
+		service := NewTapSyncService()
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL&&RESPONSEFORMAT=votable&&QUERY=SELECT 'test'"))
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		service.Router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+	t.Run("TestFormatSuccessWithoutSpecifying", func(t *testing.T) {
+		service := NewTapSyncService()
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL&&QUERY=SELECT 'test'"))
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		service.Router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+	t.Run("TestFormatFailureWhenProvidingBoth", func(t *testing.T) {
+		service := NewTapSyncService()
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL&&FORMAT=votable&&RESPONSEFORMAT=votable"))
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		service.Router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+	t.Run("TestFormatFailureWhenProvidingUnknownFormat", func(t *testing.T) {
+		service := NewTapSyncService()
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL&&FORMAT=Unknown"))
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		service.Router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+	t.Run("TestFormatFailureWhenProvidingUnknownResponseFormat", func(t *testing.T) {
+		service := NewTapSyncService()
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL&&RESPONSEFORMAT=Unknown"))
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		service.Router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+	t.Run("TestBadRequestIfQueryIsEmpty", func(t *testing.T) {
+		service := NewTapSyncService()
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL"))
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		service.Router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
 }
 
-func (suite *TAPSyncTestSuite) TestFormatSuccess() {
-	service := NewTapSyncService()
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL&&FORMAT=votable&&QUERY=SELECT 'test'"))
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	service.Router.ServeHTTP(w, req)
-
-	suite.Equal(http.StatusOK, w.Code)
+func TestCSVQueries(t *testing.T) {
+	t.Run("TestCSVQuerySuccess", func(t *testing.T) {
+		service := NewTapSyncService()
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL&&FORMAT=csv&&QUERY=SELECT 'test'"))
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		service.Router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "?column?\ntest\n", w.Body.String())
+		assert.Equal(t, "text/csv", w.Header().Get("Content-Type"))
+	})
+	t.Run("TestTSVQuerySuccess", func(t *testing.T) {
+		service := NewTapSyncService()
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL&&FORMAT=tsv&&QUERY=SELECT 'test'"))
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		service.Router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "?column?\ntest\n", w.Body.String())
+		assert.Equal(t, "text/csv", w.Header().Get("Content-Type"))
+	})
+	t.Run("TestCSVQueryFailure", func(t *testing.T) {
+		service := NewTapSyncService()
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL&&FORMAT=csv&&QUERY=SELECT * from dontexist"))
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		service.Router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		assert.Equal(t, "application/xml; charset=utf-8", w.Header().Get("Content-Type"))
+		// the default gin xml render does not show quotes
+		assert.Contains(t, w.Body.String(), "relation &#34;dontexist&#34; does not exist")
+	})
 }
 
-func (suite *TAPSyncTestSuite) TestResponseFormatSuccess() {
-	service := NewTapSyncService()
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL&&RESPONSEFORMAT=votable&&QUERY=SELECT 'test'"))
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	service.Router.ServeHTTP(w, req)
-
-	suite.Equal(http.StatusOK, w.Code)
-}
-
-func (suite *TAPSyncTestSuite) TestFormatSuccessWithoutSpecifying() {
-	service := NewTapSyncService()
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL&&QUERY=SELECT 'test'"))
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	service.Router.ServeHTTP(w, req)
-
-	suite.Equal(http.StatusOK, w.Code)
-}
-
-func (suite *TAPSyncTestSuite) TestFormatFailureWhenProvidingBoth() {
-	service := NewTapSyncService()
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL&&FORMAT=votable&&RESPONSEFORMAT=votable"))
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	service.Router.ServeHTTP(w, req)
-
-	suite.Equal(http.StatusBadRequest, w.Code)
-}
-
-func (suite *TAPSyncTestSuite) TestFormatFailureWhenProvidingUnknownFormat() {
-	service := NewTapSyncService()
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL&&FORMAT=Unknown"))
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	service.Router.ServeHTTP(w, req)
-
-	suite.Equal(http.StatusBadRequest, w.Code)
-}
-func (suite *TAPSyncTestSuite) TestFormatFailureWhenProvidingUnknownResponseFormat() {
-	service := NewTapSyncService()
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL&&RESPONSEFORMAT=Unknown"))
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	service.Router.ServeHTTP(w, req)
-
-	suite.Equal(http.StatusBadRequest, w.Code)
-}
-func (suite *TAPSyncTestSuite) TestBadRequestIfQueryIsEmpty() {
-	service := NewTapSyncService()
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL"))
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	service.Router.ServeHTTP(w, req)
-
-	suite.Equal(http.StatusBadRequest, w.Code)
-}
-
-func (suite *TAPSyncTestSuite) TestPerformQuerySuccess() {
-	service := NewTapSyncService()
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL&&QUERY=SELECT 'test'"))
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	service.Router.ServeHTTP(w, req)
-
-	suite.Equal(http.StatusOK, w.Code)
-}
-
-// In order for 'go test' to run this suite, we need to create
-// a normal test function and pass our suite to suite.Run
-func TestTAPSyncTestSuite(t *testing.T) {
-	suite.Run(t, new(TAPSyncTestSuite))
+func TestVOTableQueries(t *testing.T) {
+	t.Run("TestVOTableQuerySuccess", func(t *testing.T) {
+		service := NewTapSyncService()
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL&&FORMAT=votable&&QUERY=SELECT 'test'"))
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		service.Router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, `<?xml version="1.0" encoding="UTF-8"?>
+<VOTABLE version="1.4" xmlns="http://www.ivoa.net/xml/VOTable/v1.4">
+	<RESOURCE type="results">
+		<INFO name="QUERY_STATUS" value="OK"></INFO>
+		<TABLE name="results">
+			<DESCRIPTION>Results of the query</DESCRIPTION>
+			<FIELD name="?column?" datatype=""></FIELD>
+			<DATA>
+				<TABLEDATA>
+					<TR>
+						<TD>test</TD>
+					</TR>
+				</TABLEDATA>
+			</DATA>
+		</TABLE>
+	</RESOURCE>
+</VOTABLE>`, w.Body.String())
+	})
 }
