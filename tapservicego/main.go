@@ -5,6 +5,6 @@ import (
 )
 
 func main() {
-    r := tapsync.TapSyncService()
-    r.Run()
+    r := tapsync.NewTapSyncService()
+    r.Router.Run()
 }

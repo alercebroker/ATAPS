@@ -1,6 +1,8 @@
 package tapsync
 
 import (
+	"ataps/internal/sqlparser"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"slices"
@@ -8,98 +10,151 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func handleSQLQuery(c *gin.Context, query string) interface {} {
+func setResponse(c *gin.Context, sqlResult []map[string]interface{}, format string) error {
+	switch format {
+	case "votable":
+		votable, err := sqlparser.CreateVOTable(sqlResult)
+		if err != nil {
+			return err
+		}
+		result, err := sqlparser.VOTableToXML(votable)
+		if err != nil {
+			return err
+		}
+		c.Header("Content-Type", "application/xml")
+		c.Header("Content-Encoding", "UTF-8")
+		c.Header("Content-Length", fmt.Sprintf("%d", len(result)))
+		c.String(http.StatusOK, result)
+	case "csv":
+		result, err := sqlparser.ParseCSV(sqlResult)
+		if err != nil {
+			return err
+		}
+		c.Header("Content-Type", "text/csv")
+		c.Header("Content-Encoding", "UTF-8")
+		c.Header("Content-Length", fmt.Sprintf("%d", len(result)))
+		c.String(http.StatusOK, result)
+	case "tsv":
+		result, err := sqlparser.ParseTSV(sqlResult)
+		if err != nil {
+			return err
+		}
+		c.Header("Content-Type", "text/csv")
+		c.Header("Content-Encoding", "UTF-8")
+		c.Header("Content-Length", fmt.Sprintf("%d", len(result)))
+		c.String(http.StatusOK, result)
+	case "fits":
+		return nil
+	case "text":
+		return nil
+	case "html":
+		return nil
+	default:
+		return fmt.Errorf("Invalid format")
+	}
 	return nil
 }
 
-func parseSQLResult(sqlResult interface{}, format string) (interface{}, error) {
-	switch format {
-	case "votable":
-		return nil, nil
-	case "csv":
-		return nil, nil
-	case "tsv":
-		return nil, nil
-	case "fits":
-		return nil, nil
-	case "text":
-		return nil, nil
-	case "html":
-		return nil, nil
-	}
-	return nil, fmt.Errorf("Could not parse result")
-}
-
-
 func caseInvalidLang(c *gin.Context) {
-	c.XML(http.StatusBadRequest, gin.H{
-		"error": fmt.Sprintf("Invalid lang"),
-	})
+	code := http.StatusBadRequest
+	c.XML(code, getErrorVOTable(fmt.Errorf("Invalid LANG %s", c.PostForm("LANG")), code))
 }
 
-func getFormatResponseFormat(c *gin.Context) string {
+// getFormatOrResponseFormat returns the format or response format
+// from the request. If both are provided, it returns an error.
+// If neither are provided, it returns the default format, "votable".
+// If one is provided, it returns that format.
+// If the format is invalid, it returns an error.
+func getFormatOrResponseFormat(c *gin.Context) string {
 	format := c.PostForm("FORMAT")
 	responseFormat := c.PostForm("RESPONSEFORMAT")
 	validFormats := []string{"votable", "csv", "csv", "tsv", "fits", "text", "html"}
 	if format != "" && responseFormat == "" {
-		if slices.Contains(validFormats, format){
+		if slices.Contains(validFormats, format) {
 			return format
 		}
-		c.XML(http.StatusBadRequest, gin.H{
-			"error": fmt.Sprintf("Invalid format"),
-		})
+		code := http.StatusBadRequest
+		c.XML(code, getErrorVOTable(fmt.Errorf("Invalid format %s", format), code))
 		return ""
 	}
 	if responseFormat != "" && format == "" {
 		if slices.Contains(validFormats, responseFormat) {
 			return responseFormat
 		}
-		c.XML(http.StatusBadRequest, gin.H{
-			"error": fmt.Sprintf("Invalid response format"),
-		})
+		code := http.StatusBadRequest
+		c.XML(code, getErrorVOTable(fmt.Errorf("Invalid format %s", responseFormat), code))
 		return ""
 	}
 	if responseFormat == "" && format == "" {
 		return "votable" // default format
 	}
-	c.XML(http.StatusBadRequest, gin.H{
-		"error": fmt.Sprintf("Do not provide both FORMAT and RESPONSEFORMAT"),
-	})
+	code := http.StatusBadRequest
+	c.XML(code, getErrorVOTable(fmt.Errorf("Both FORMAT and RESPONSEFORMAT provided"), code))
 	return ""
 }
 
-func syncPostHandler(c *gin.Context) {
+// SyncPostHandler handles the POST request to /sync.
+// Required paraemeters:
+// - LANG: the language of the query. Only "PSQL" is supported for now.
+// - QUERY: the query to execute.
+// Optional parameters:
+// - FORMAT: the format of the response. Default is "votable".
+// - RESPONSEFORMAT: the format of the response. Default is "votable".
+// If both FORMAT and RESPONSEFORMAT are provided, an error is returned.
+func (service *TapSyncService) SyncPostHandler(c *gin.Context) {
 	lang := c.PostForm("LANG")
 	switch lang {
 	case "PSQL":
 		query := c.PostForm("QUERY")
 		if query == "" {
-			c.XML(http.StatusBadRequest, gin.H{
-				"error": fmt.Sprintf("Query is empty"),
-			})
+			code := http.StatusBadRequest
+			c.XML(code, getErrorVOTable(fmt.Errorf("No query provided"), code))
 			return
 		}
-		format := getFormatResponseFormat(c)
+		format := getFormatOrResponseFormat(c)
 		if format == "" {
+			// here the error has already been added to the response
+			// so we just return
 			return
 		}
-		sqlResult := handleSQLQuery(c, query)
-		parsedResult, err := parseSQLResult(sqlResult, format)
+		sqlResult, err := HandleSQLQuery(query, service.DB)
 		if err != nil {
-			c.XML(http.StatusInternalServerError, gin.H{
-				"error": fmt.Sprintf("Could not parse result"),
-			})
+			// consider that the default XML render does not show quotes
+			// if the error message contains quotes, it will be replaced by &#34;
+			code := http.StatusInternalServerError
+			c.XML(code, getErrorVOTable(err, code))
 			return
 		}
-		c.XML(http.StatusOK, parsedResult)
+		err = setResponse(c, sqlResult, format)
+		if err != nil {
+			code := http.StatusInternalServerError
+			c.XML(code, getErrorVOTable(err, code))
+			return
+		}
 	default:
 		caseInvalidLang(c)
 		return
 	}
 }
 
-func TapSyncService() *gin.Engine {
-	r := gin.Default()
-	r.POST("/sync", syncPostHandler)
-	return r
+type TapSyncService struct {
+	Router *gin.Engine
+	DB     *sql.DB
+	config *Config
+}
+
+func NewTapSyncService() *TapSyncService {
+	config := GetConfig()
+	db, err := GetDB(config.DatabaseURL)
+	if err != nil {
+		panic(err)
+	}
+	router := gin.Default()
+	service := &TapSyncService{
+		Router: router,
+		DB:     db,
+		config: config,
+	}
+	service.Router.POST("/sync", service.SyncPostHandler)
+	return service
 }
