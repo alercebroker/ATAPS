@@ -21,7 +21,7 @@ func setResponse(c *gin.Context, sqlResult []map[string]interface{}, format stri
 		if err != nil {
 			return err
 		}
-		c.Header("Content-Type", "application/xml")
+		c.Header("Content-Type", "application/x-votable+xml")
 		c.Header("Content-Encoding", "UTF-8")
 		c.Header("Content-Length", fmt.Sprintf("%d", len(result)))
 		c.String(http.StatusOK, result)
@@ -39,12 +39,19 @@ func setResponse(c *gin.Context, sqlResult []map[string]interface{}, format stri
 		if err != nil {
 			return err
 		}
-		c.Header("Content-Type", "text/csv")
+		c.Header("Content-Type", "text/tab-separated-values")
 		c.Header("Content-Encoding", "UTF-8")
 		c.Header("Content-Length", fmt.Sprintf("%d", len(result)))
 		c.String(http.StatusOK, result)
 	case "fits":
-		return nil
+		result, err := sqlparser.ParseFits(sqlResult)
+		if err != nil {
+			return err
+		}
+		c.Header("Content-Type", "application/fits")
+		c.Header("Content-Encoding", "UTF-8")
+		c.Header("Content-Length", fmt.Sprintf("%d", result.Len()))
+		c.Data(http.StatusOK, "application/fits", result.Bytes())
 	case "text":
 		return nil
 	case "html":
