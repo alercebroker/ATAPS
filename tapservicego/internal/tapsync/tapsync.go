@@ -1,7 +1,7 @@
 package tapsync
 
 import (
-	"ataps/internal/sqlparser"
+	"ataps/internal/parsers"
 	"database/sql"
 	"fmt"
 	"net/http"
@@ -13,11 +13,11 @@ import (
 func setResponse(c *gin.Context, sqlResult []map[string]interface{}, format string) error {
 	switch format {
 	case "votable":
-		votable, err := sqlparser.CreateVOTable(sqlResult)
+		votable, err := parsers.CreateVOTable(sqlResult)
 		if err != nil {
 			return err
 		}
-		result, err := sqlparser.VOTableToXML(votable)
+		result, err := parsers.VOTableToXML(votable)
 		if err != nil {
 			return err
 		}
@@ -26,7 +26,7 @@ func setResponse(c *gin.Context, sqlResult []map[string]interface{}, format stri
 		c.Header("Content-Length", fmt.Sprintf("%d", len(result)))
 		c.String(http.StatusOK, result)
 	case "csv":
-		result, err := sqlparser.ParseCSV(sqlResult)
+		result, err := parsers.ParseCSV(sqlResult)
 		if err != nil {
 			return err
 		}
@@ -35,7 +35,7 @@ func setResponse(c *gin.Context, sqlResult []map[string]interface{}, format stri
 		c.Header("Content-Length", fmt.Sprintf("%d", len(result)))
 		c.String(http.StatusOK, result)
 	case "tsv":
-		result, err := sqlparser.ParseTSV(sqlResult)
+		result, err := parsers.ParseTSV(sqlResult)
 		if err != nil {
 			return err
 		}
@@ -44,7 +44,7 @@ func setResponse(c *gin.Context, sqlResult []map[string]interface{}, format stri
 		c.Header("Content-Length", fmt.Sprintf("%d", len(result)))
 		c.String(http.StatusOK, result)
 	case "fits":
-		result, err := sqlparser.ParseFits(sqlResult)
+		result, err := parsers.ParseFits(sqlResult)
 		if err != nil {
 			return err
 		}

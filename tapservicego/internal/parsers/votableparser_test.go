@@ -1,4 +1,4 @@
-package sqlparser
+package parsers
 
 import (
 	"ataps/pkg/votable"
@@ -55,11 +55,11 @@ func TestVOTableToXML(t *testing.T) {
 		Version: "1.4",
 		Xmlns:   "http://www.ivoa.net/xml/VOTable/v1.4",
 		Resource: votable.Resource{
-			Type: "results",
+			Type:  "results",
 			Infos: []votable.Info{{Name: "QUERY_STATUS", Value: "OK"}},
 			Tables: []votable.Table{
 				{
-					Name: "results",
+					Name:        "results",
 					Description: "Results of the query",
 					Fields: []votable.Field{
 						{Name: "RA", Datatype: "double", Unit: "deg"},

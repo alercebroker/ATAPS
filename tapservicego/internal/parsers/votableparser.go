@@ -1,4 +1,4 @@
-package sqlparser
+package parsers
 
 import (
 	"ataps/pkg/votable"

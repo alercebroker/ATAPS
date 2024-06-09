@@ -1,4 +1,4 @@
-package sqlparser
+package parsers
 
 import (
 	"bytes"
@@ -74,12 +74,12 @@ func ParseTSV(data []map[string]interface{}) (string, error) {
 }
 
 func parsedata(data []map[string]interface{}, w *csv.Writer) error {
-        headers := getHeaders(data[0])
-        err := w.Write(headers)
-        if err != nil {
-                log.Printf("Error writing headers: %v", err)
-                return err
-        }
+	headers := getHeaders(data[0])
+	err := w.Write(headers)
+	if err != nil {
+		log.Printf("Error writing headers: %v", err)
+		return err
+	}
 	for _, row := range data {
 		converted := convertRowValuesToString(row, headers)
 		err := w.Write(converted)
@@ -98,9 +98,9 @@ func parsedata(data []map[string]interface{}, w *csv.Writer) error {
 
 func convertRowValuesToString(row map[string]interface{}, headers []string) []string {
 	var converted []string
-        for _, header := range headers {
-                converted = append(converted, fmt.Sprintf("%v", row[header]))
-        }
+	for _, header := range headers {
+		converted = append(converted, fmt.Sprintf("%v", row[header]))
+	}
 	return converted
 }
 
@@ -109,7 +109,7 @@ func getHeaders(row map[string]interface{}) []string {
 	for header := range row {
 		headers = append(headers, header)
 	}
-        // go map iteration order is random, so we need sort the headers
-        sort.Strings(headers)
+	// go map iteration order is random, so we need sort the headers
+	sort.Strings(headers)
 	return headers
 }
