@@ -249,5 +249,29 @@ func TestTextQueries(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, "text/plain", w.Header().Get("Content-Type"))
 		assert.Contains(t, w.Body.String(), "id | name | number")
+		assert.Contains(t, w.Body.String(), "test | 1")
+	})
+}
+
+func TestHTMLQueries(t *testing.T) {
+	t.Run("TestHTMLQuerySuccess", func(t *testing.T) {
+		db, err := GetDB(os.Getenv("DATABASE_URL"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		testhelpers.PopulateDb(db)
+		defer testhelpers.ClearDataFromTable(db)
+		service := NewTapSyncService()
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/sync", strings.NewReader("LANG=PSQL&&FORMAT=html&&QUERY=SELECT * FROM test"))
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		service.Router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "text/html", w.Header().Get("Content-Type"))
+		assert.Contains(t, w.Body.String(), "<th>id</th>")
+		assert.Contains(t, w.Body.String(), "<th>name</th>")
+		assert.Contains(t, w.Body.String(), "<th>number</th>")
+		assert.Contains(t, w.Body.String(), "<td>test</td>")
+		assert.Contains(t, w.Body.String(), "<td>1</td>")
 	})
 }

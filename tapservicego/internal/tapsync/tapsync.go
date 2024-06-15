@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -59,7 +60,13 @@ func setResponse(c *gin.Context, sqlResult []map[string]interface{}, format stri
 		c.Header("Content-Length", fmt.Sprintf("%d", len(result)))
 		c.String(http.StatusOK, result)
 	case "html":
-		return nil
+		c.Header("Content-Type", "text/html")
+		c.Header("Content-Encoding", "UTF-8")
+		err := parsers.ParseHTML(sqlResult, c.Writer)
+		if err != nil {
+			return err
+		}
+		c.Status(http.StatusOK)
 	default:
 		return fmt.Errorf("Invalid format")
 	}
