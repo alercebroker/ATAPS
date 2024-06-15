@@ -33,7 +33,7 @@ import (
 func ParseCSV(data []map[string]interface{}) (string, error) {
 	var csvResult bytes.Buffer
 	w := csv.NewWriter(&csvResult)
-	err := parsedata(data, w)
+	err := parseCsvData(data, w)
 	if err != nil {
 		return "", err
 	}
@@ -66,14 +66,14 @@ func ParseTSV(data []map[string]interface{}) (string, error) {
 	var tsvResult bytes.Buffer
 	w := csv.NewWriter(&tsvResult)
 	w.Comma = '\t'
-	err := parsedata(data, w)
+	err := parseCsvData(data, w)
 	if err != nil {
 		return "", err
 	}
 	return tsvResult.String(), nil
 }
 
-func parsedata(data []map[string]interface{}, w *csv.Writer) error {
+func parseCsvData(data []map[string]interface{}, w *csv.Writer) error {
 	headers := getHeaders(data[0])
 	err := w.Write(headers)
 	if err != nil {
