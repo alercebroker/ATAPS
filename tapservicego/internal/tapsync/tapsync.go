@@ -53,7 +53,11 @@ func setResponse(c *gin.Context, sqlResult []map[string]interface{}, format stri
 		c.Header("Content-Length", fmt.Sprintf("%d", result.Len()))
 		c.Data(http.StatusOK, "application/fits", result.Bytes())
 	case "text":
-		return nil
+		result := parsers.ParseText(sqlResult)
+		c.Header("Content-Type", "text/plain")
+		c.Header("Content-Encoding", "UTF-8")
+		c.Header("Content-Length", fmt.Sprintf("%d", len(result)))
+		c.String(http.StatusOK, result)
 	case "html":
 		return nil
 	default:
