@@ -18,7 +18,8 @@ import (
 var container *postgres.PostgresContainer
 var ctx context.Context
 
-func globalSetup() {
+func initializeLocalDB() {
+	log.Println("Using local database")
 	var err error
 	ctx = context.Background()
 	container, err = testhelpers.CreatePostgresContainer(ctx)
@@ -33,8 +34,25 @@ func globalSetup() {
 	os.Setenv("DATABASE_URL", connStr)
 }
 
+func initializeDaggerDB() {
+	log.Println("Using Dagger database")
+	os.Setenv("DATABASE_URL", "host=db user=postgres password=postgres dbname=postgres port=5432")
+}
+
+func globalSetup() {
+	if os.Getenv("ENV") == "DEV" || os.Getenv("ENV") == "" {
+		initializeLocalDB()
+	} else if os.Getenv("ENV") == "CI" {
+		initializeDaggerDB()
+	} else {
+		log.Fatal("Unknown environment")
+	}
+}
+
 func globalTeardown() {
-	testhelpers.CleanUpContainer(ctx, container)
+	if os.Getenv("ENV") == "DEV" || os.Getenv("ENV") == "" {
+		testhelpers.CleanUpContainer(ctx, container)
+	}
 }
 
 func TestMain(m *testing.M) {
