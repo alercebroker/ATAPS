@@ -1,4 +1,4 @@
-module dagger/tapservicego
+module dagger/ci
 
 go 1.22.3
 

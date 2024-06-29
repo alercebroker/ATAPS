@@ -1,7 +1,7 @@
 ---
 name: Test
 on:
-  pull-request:
+  pull_request:
     branches: [main]
 
 jobs:
@@ -17,5 +17,5 @@ jobs:
         with:
           version: "latest"
           verb: call
-          # assumes a Go project
-          args: test --source=.
+          args: test --rootDir=..
+          workdir: ./ci
