@@ -1,0 +1,12 @@
+{
+  "name": "ci",
+  "sdk": "go",
+  "dependencies": [
+    {
+      "name": "tapservicego",
+      "source": "../tapservicego"
+    }
+  ],
+  "source": "dagger",
+  "engineVersion": "v0.11.9"
+}
