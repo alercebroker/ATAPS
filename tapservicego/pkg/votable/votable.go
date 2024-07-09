@@ -96,3 +96,23 @@ type Row struct {
 type Column struct {
 	Value string `xml:",chardata"`
 }
+
+// NewVOTable creates a new VOTable from string
+func NewVOTableFromString(xmlRepr string) (*VOTable, error) {
+	var votable VOTable
+	err := xml.Unmarshal([]byte(xmlRepr), &votable)
+	if err != nil {
+		return nil, err
+	}
+	return &votable, nil
+}
+
+// NewVOTableFromBytes creates a new VOTable from bytes
+func NewVOTableFromBytes(xmlRepr []byte) (*VOTable, error) {
+	var votable VOTable
+	err := xml.Unmarshal(xmlRepr, &votable)
+	if err != nil {
+		return nil, err
+	}
+	return &votable, nil
+}

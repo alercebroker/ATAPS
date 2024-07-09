@@ -22,7 +22,7 @@ func initializeLocalDB() {
 	log.Println("Using local database")
 	var err error
 	ctx = context.Background()
-	container, err = testhelpers.CreatePostgresContainer(ctx)
+	container, err = testhelpers.CreatePostgresContainer(ctx, "tapsync")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -36,7 +36,7 @@ func initializeLocalDB() {
 
 func initializeDaggerDB() {
 	log.Println("Using Dagger database")
-	os.Setenv("DATABASE_URL", "host=db user=postgres password=postgres dbname=postgres port=5432")
+	os.Setenv("DATABASE_URL", "host=db user=testuser password=testpassword port=5432")
 }
 
 func globalSetup() {
@@ -47,6 +47,25 @@ func globalSetup() {
 	} else {
 		log.Fatal("Unknown environment")
 	}
+	setUpTestDatabase()
+}
+
+func setUpTestDatabase() {
+	if os.Getenv("ENV") == "DEV" || os.Getenv("ENV") == "" {
+		return
+	}
+	db, err := GetDB(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		log.Printf("Could not connect")
+		log.Fatal(err)
+	}
+	defer db.Close()
+	_, err = db.Exec("CREATE DATABASE tapsync")
+	if err != nil {
+		log.Printf("Could not create tapsync database")
+		log.Panic(err)
+	}
+	os.Setenv("DATABASE_URL", os.Getenv("DATABASE_URL")+" dbname=tapsync")
 }
 
 func globalTeardown() {
@@ -242,7 +261,6 @@ func TestFitsQueries(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			t.Logf("Row: %d, %v, %d", id, name, number)
 			assert.Equal(t, "test", name)
 			assert.Equal(t, 1, number)
 			count++

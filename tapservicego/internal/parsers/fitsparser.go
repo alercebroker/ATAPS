@@ -99,6 +99,8 @@ func createColumns(data []map[string]interface{}) ([]fitsio.Column, error) {
 			format = "D" // 64-bit floating point
 		case string:
 			format = fmt.Sprintf("%dA", maxStringLength+1) // Character string with length
+		case bool:
+			format = "L" // logical
 		default:
 			return nil, fmt.Errorf("unsupported data type for column %s", key)
 		}
