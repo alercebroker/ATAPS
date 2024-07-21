@@ -74,6 +74,9 @@ func ParseTSV(data []map[string]interface{}) (string, error) {
 }
 
 func parseCsvData(data []map[string]interface{}, w *csv.Writer) error {
+	if len(data) == 0 {
+		return nil
+	}
 	headers := getHeaders(data[0])
 	err := w.Write(headers)
 	if err != nil {

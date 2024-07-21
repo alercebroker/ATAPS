@@ -39,14 +39,14 @@ func (m *Tapservicego) BuildEnv(ctx context.Context, source *Directory) *Contain
 func (m *Tapservicego) Test(ctx context.Context, source *Directory) (string, error) {
 	db := dag.
 		Container().
-		From("index.docker.io/postgres").
-		WithEnvVariable("POSTGRES_USER", "postgres").
-		WithEnvVariable("POSTGRES_PASSWORD", "postgres").
+		From("docker.io/postgres:16-alpine").
+		WithEnvVariable("POSTGRES_USER", "testuser").
+		WithEnvVariable("POSTGRES_PASSWORD", "testpassword").
 		AsService()
 	return m.BuildEnv(ctx, source).
 		WithEnvVariable("ENV", "CI").
 		WithServiceBinding("db", db).
-		WithExec([]string{"go", "test", "./..."}).
+		WithExec([]string{"go", "test", "-failfast", "./..."}).
 		Stdout(ctx)
 }
 

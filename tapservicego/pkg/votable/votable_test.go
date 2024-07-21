@@ -13,11 +13,11 @@ func TestCreateVOTable(t *testing.T) {
 		Version: "1.4",
 		Xmlns:   "http://www.ivoa.net/xml/VOTable/v1.4",
 		Resource: Resource{
-			Type: "results",
+			Type:  "results",
 			Infos: []Info{{Name: "QUERY_STATUS", Value: "OK"}},
 			Tables: []Table{
 				{
-					Name: "results",
+					Name:        "results",
 					Description: "Results of the query",
 					Fields: []Field{
 						{Name: "RA", Datatype: "double", Unit: "deg"},
@@ -78,4 +78,45 @@ func TestCreateVOTable(t *testing.T) {
 	</RESOURCE>
 </VOTABLE>`
 	assert.Equal(t, expectedVOTableXML, votableXML)
+}
+
+func TestNewVotableFromString(t *testing.T) {
+	votableString := `<VOTABLE version="1.4" xmlns="http://www.ivoa.net/xml/VOTable/v1.4">
+	<RESOURCE type="results">
+		<INFO name="QUERY_STATUS" value="OK"></INFO>
+		<TABLE name="results">
+			<DESCRIPTION>Results of the query</DESCRIPTION>
+			<FIELD name="RA" datatype="double" unit="deg"></FIELD>
+			<FIELD name="DEC" datatype="double" unit="deg"></FIELD>
+			<FIELD name="MAG" datatype="float" unit="mag">
+				<DESCRIPTION>Magnitude</DESCRIPTION>
+			</FIELD>
+			<DATA>
+				<TABLEDATA>
+					<TR>
+						<TD>10.0</TD>
+						<TD>20.0</TD>
+						<TD>15.0</TD>
+					</TR>
+					<TR>
+						<TD>20.0</TD>
+						<TD>30.0</TD>
+						<TD>16.0</TD>
+					</TR>
+					<TR>
+						<TD>30.0</TD>
+						<TD>40.0</TD>
+						<TD>17.0</TD>
+					</TR>
+				</TABLEDATA>
+			</DATA>
+		</TABLE>
+	</RESOURCE>
+</VOTABLE>`
+	votable, err := NewVOTableFromString(votableString)
+	if err != nil {
+		t.Errorf("Error parsing VOTable: %v", err)
+	}
+	assert.Equal(t, "OK", votable.Resource.Infos[0].Value)
+	assert.Equal(t, 3, len(votable.Resource.Tables[0].Data.TableData.Rows))
 }

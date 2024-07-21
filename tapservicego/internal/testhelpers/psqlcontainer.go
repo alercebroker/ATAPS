@@ -10,11 +10,12 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func CreatePostgresContainer(ctx context.Context) (*postgres.PostgresContainer, error) {
+func CreatePostgresContainer(ctx context.Context, dbName string) (*postgres.PostgresContainer, error) {
 	postgresContainer, err := postgres.RunContainer(ctx,
 		testcontainers.WithImage("docker.io/postgres:16-alpine"),
-		// postgres.WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
-		// postgres.WithConfigFile(filepath.Join("testdata", "my-postgres.conf")),
+		postgres.WithDatabase(dbName),
+		postgres.WithUsername("testuser"),
+		postgres.WithPassword("testpassword"),
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("database system is ready to accept connections").
 				WithOccurrence(2).
@@ -22,6 +23,11 @@ func CreatePostgresContainer(ctx context.Context) (*postgres.PostgresContainer, 
 	)
 	if err != nil {
 		log.Printf("failed to start container: %s", err)
+		return nil, err
+	}
+	err = postgresContainer.Snapshot(ctx, postgres.WithSnapshotName("initial"))
+	if err != nil {
+		log.Printf("failed to snapshot container: %s", err)
 		return nil, err
 	}
 	return postgresContainer, nil
