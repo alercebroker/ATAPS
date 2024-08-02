@@ -2,7 +2,10 @@ package tapsync
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
+	"net/url"
+	"strings"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -13,8 +16,12 @@ import (
 // or an error if one occurs.
 // The URL should be in the format:
 // postgresql://user:password@host:port/database
-func GetDB(url string) (*sql.DB, error) {
-	db, err := sql.Open("pgx", url)
+func GetDB(dbUrl string) (*sql.DB, error) {
+	dbUrl, err := getEncodedUrl(dbUrl)
+	if err != nil {
+		return nil, err
+	}
+	db, err := sql.Open("pgx", dbUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -25,7 +32,6 @@ func GetDB(url string) (*sql.DB, error) {
 	return db, nil
 }
 
-
 // HandleSQLQuery executes the provided query
 // on the provided database connection
 // and returns a slice of maps representing the rows
@@ -33,7 +39,7 @@ func GetDB(url string) (*sql.DB, error) {
 // The maps are keyed by the column names
 // and the values are the column values.
 // The query should be a valid SQL query string.
-func HandleSQLQuery(query string, db *sql.DB) ([]map[string]interface {}, error) {
+func HandleSQLQuery(query string, db *sql.DB) ([]map[string]interface{}, error) {
 	// Execute the query
 	rows, err := db.Query(query)
 	if err != nil {
@@ -84,3 +90,16 @@ func HandleSQLQuery(query string, db *sql.DB) ([]map[string]interface {}, error)
 	return results, nil
 }
 
+func getEncodedUrl(originalURL string) (string, error) {
+	parts := strings.SplitN(originalURL, ":", 3)
+	if len(parts) != 3 {
+		return "", fmt.Errorf("invalid URL format")
+	}
+
+	// Encode the password
+	password := strings.SplitN(parts[2], "@", 2)[0]
+	encodedPassword := url.QueryEscape(password)
+
+	// Reconstruct the URL with the encoded password
+	return fmt.Sprintf("%s:%s:%s@%s", parts[0], parts[1], encodedPassword, strings.SplitN(parts[2], "@", 2)[1]), nil
+}

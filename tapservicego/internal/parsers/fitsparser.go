@@ -1,51 +1,49 @@
 package parsers
 
 import (
-	"bytes"
 	"fmt"
 	"log"
+	"os"
 	"reflect"
 	"sort"
+	"strings"
 
-	"github.com/dirodriguezm/fitsio"
+	"github.com/astrogo/cfitsio"
 )
 
-func ParseFits(data []map[string]interface{}) (*bytes.Buffer, error) {
-	// create buffer
-	var fitsResult bytes.Buffer
-	f, err := fitsio.Create(&fitsResult)
+func ParseFits(data []map[string]interface{}) (string, error) {
+	// create fits file
+	f, err := os.CreateTemp("", "*.fits")
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	defer f.Close()
+	fname := f.Name()
+	f.Close() // close immediately since we only need the filename
+	os.Remove(fname)
+	fitsFile, err := cfitsio.Create(fname)
+	if err != nil {
+		return "", err
+	}
 	// write primary hdu
-	phdu, err := fitsio.NewPrimaryHDU(nil)
+	phdu, err := cfitsio.NewPrimaryHDU(&fitsFile, cfitsio.NewDefaultHeader())
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	err = f.Write(phdu)
-	if err != nil {
-		return nil, err
-	}
+	defer phdu.Close()
 	// create table
-	fitsTable, err := CreateFits(data)
+	fitsTable, err := CreateFits(data, &fitsFile)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer fitsTable.Close()
-	// write table
-	err = f.Write(fitsTable)
+	err = fitsFile.Close()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	err = f.Close()
-	if err != nil {
-		return nil, err
-	}
-	return &fitsResult, nil
+	return fname, err
 }
 
-func CreateFits(data []map[string]interface{}) (*fitsio.Table, error) {
+func CreateFits(data []map[string]interface{}, file *cfitsio.File) (*cfitsio.Table, error) {
 	// create columns using the keys of the first map
 	// the type of the column is determined by the type of the value
 	columns, err := createColumns(data)
@@ -53,12 +51,12 @@ func CreateFits(data []map[string]interface{}) (*fitsio.Table, error) {
 		log.Printf("Error creating columns: %v", err)
 		return nil, err
 	}
+	data = cleanData(data, columns)
 	// create table from columns
-	table, err := fitsio.NewTable("results", columns, fitsio.BINARY_TBL)
+	table, err := cfitsio.NewTable(file, "results", columns, cfitsio.BINARY_TBL)
 	if err != nil {
 		return nil, err
 	}
-	defer table.Close()
 	// populate the table
 	rslice := reflect.ValueOf(data)
 	for i := 0; i < rslice.Len(); i++ {
@@ -76,9 +74,64 @@ func CreateFits(data []map[string]interface{}) (*fitsio.Table, error) {
 	return table, nil
 }
 
-func createColumns(data []map[string]interface{}) ([]fitsio.Column, error) {
-	columns := make([]fitsio.Column, 0, len(data[0]))
-	maxStringLength := getMaxStringLength(data)
+func createColumns(data []map[string]interface{}) ([]cfitsio.Column, error) {
+	columns := make([]cfitsio.Column, 0, len(data[0]))
+	keys := make([]string, 0, len(data[0]))
+	for key := range data[0] {
+		keys = append(keys, key)
+	}
+	// sort the keys to ensure consistent column order
+	sort.Strings(keys)
+	var format string
+	for _, key := range keys {
+		for i := 0; i < len(data); i++ {
+			if data[i][key] == nil {
+				continue
+			}
+			value := data[i][key]
+			format = getFormat(value)
+			if format == "" {
+				return nil, fmt.Errorf("Error creating columns: unsupported type %T for key %s", value, key)
+			}
+			columns = append(columns, cfitsio.Column{
+				Name:   key,
+				Format: format,
+			})
+			break
+		}
+	}
+	return columns, nil
+}
+
+func getFormat(value interface{}) string {
+	switch value.(type) {
+	case int16:
+		return "I" // 16-bit integer
+	case int32:
+		return "J" // 32-bit integer
+	case int:
+		return "K" // 64-bit integer
+	case int64:
+		return "K" // 64-bit integer
+	case float32:
+		return "E" // 32-bit floating point
+	case float64:
+		return "D" // 64-bit floating point
+	case string:
+		stringLength := len(value.(string))
+		return fmt.Sprintf("%dA", stringLength) // Character string with length
+	case bool:
+		return "L" // logical
+	default:
+		return ""
+	}
+}
+
+func cleanData(data []map[string]interface{}, columns []cfitsio.Column) []map[string]interface{} {
+	cleanedData := make([]map[string]interface{}, len(data))
+	for i := 0; i < len(data); i++ {
+		cleanedData[i] = make(map[string]interface{})
+	}
 	keys := make([]string, 0, len(data[0]))
 	for key := range data[0] {
 		keys = append(keys, key)
@@ -86,43 +139,43 @@ func createColumns(data []map[string]interface{}) ([]fitsio.Column, error) {
 	// sort the keys to ensure consistent column order
 	sort.Strings(keys)
 	for _, key := range keys {
-		var format string
-		value := data[0][key]
-		switch value.(type) {
-		case int32:
-			format = "J" // 32-bit integer
-		case int:
-			format = "K" // integer
-		case int64:
-			format = "K" // 64-bit integer
-		case float64:
-			format = "D" // 64-bit floating point
-		case string:
-			format = fmt.Sprintf("%dA", maxStringLength+1) // Character string with length
-		case bool:
-			format = "L" // logical
-		default:
-			return nil, fmt.Errorf("unsupported data type for column %s", key)
-		}
-		columns = append(columns, fitsio.Column{
-			Name:   key,
-			Format: format,
-		})
-	}
-	return columns, nil
-}
-
-// getMaxStringLength determines the maximum length of string values in the data
-func getMaxStringLength(data []map[string]interface{}) int {
-	maxLen := 0
-	for _, row := range data {
-		for _, value := range row {
-			if str, ok := value.(string); ok {
-				if len(str) > maxLen {
-					maxLen = len(str)
+		for i := 0; i < len(data); i++ {
+			if data[i][key] != nil {
+				cleanedData[i][key] = data[i][key]
+				continue
+			}
+			for j := 0; j < len(columns); j++ {
+				if columns[j].Name != key {
+					continue
 				}
+				format := columns[j].Format
+				cleanedData[i][key] = getZeroValueForFormat(format)
 			}
 		}
 	}
-	return maxLen
+	return cleanedData
+}
+
+func getZeroValueForFormat(format string) interface{} {
+	if strings.Contains(format, "A") {
+		format = "A"
+	}
+	switch format {
+	case "I":
+		return int16(0)
+	case "J":
+		return int32(0)
+	case "K":
+		return int64(0)
+	case "E":
+		return float32(0)
+	case "D":
+		return float64(0)
+	case "A":
+		return ""
+	case "L":
+		return false
+	default:
+		return nil
+	}
 }

@@ -4,9 +4,11 @@ import (
 	"ataps/internal/testhelpers"
 	"ataps/pkg/alercedb"
 	"net/http"
+	"net/http/httptest"
+	"os"
 	"testing"
 
-	"github.com/dirodriguezm/fitsio"
+	"github.com/astrogo/cfitsio"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,12 +20,14 @@ func TestFits_Object(t *testing.T) {
 	w := sendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM object LIMIT 3", service)
 	require.Equal(t, http.StatusOK, w.Code)
 	require.Equal(t, "application/fits", w.Header().Get("Content-Type"))
-	f, err := fitsio.Open(w.Body)
+	fname := writeFitsFile(t, w)
+	defer os.Remove(fname)
+	f, err := cfitsio.Open(fname, cfitsio.ReadOnly)
 	require.Nil(t, err)
 	defer f.Close()
 	hdu := f.HDU(1)
-	table := hdu.(*fitsio.Table)
-	require.True(t, table.Type() == fitsio.BINARY_TBL)
+	table := hdu.(*cfitsio.Table)
+	require.True(t, table.Type() == cfitsio.BINARY_TBL)
 	require.Equal(t, "results", table.Name())
 	require.Equal(t, 10, table.NumCols())
 	require.Equal(t, int64(3), table.NumRows())
@@ -44,12 +48,14 @@ func TestFits_Detection(t *testing.T) {
 	w := sendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM detection LIMIT 3", service)
 	require.Equal(t, http.StatusOK, w.Code)
 	require.Equal(t, "application/fits", w.Header().Get("Content-Type"))
-	f, err := fitsio.Open(w.Body)
+	fname := writeFitsFile(t, w)
+	defer os.Remove(fname)
+	f, err := cfitsio.Open(fname, cfitsio.ReadOnly)
 	require.Nil(t, err)
 	defer f.Close()
 	hdu := f.HDU(1)
-	table := hdu.(*fitsio.Table)
-	require.True(t, table.Type() == fitsio.BINARY_TBL)
+	table := hdu.(*cfitsio.Table)
+	require.True(t, table.Type() == cfitsio.BINARY_TBL)
 	require.Equal(t, "results", table.Name())
 	require.Equal(t, 19, table.NumCols())
 	require.Equal(t, int64(3), table.NumRows())
@@ -70,12 +76,14 @@ func TestFits_NonDetection(t *testing.T) {
 	w := sendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM non_detection LIMIT 3", service)
 	require.Equal(t, http.StatusOK, w.Code)
 	require.Equal(t, "application/fits", w.Header().Get("Content-Type"))
-	f, err := fitsio.Open(w.Body)
+	fname := writeFitsFile(t, w)
+	defer os.Remove(fname)
+	f, err := cfitsio.Open(fname, cfitsio.ReadOnly)
 	require.Nil(t, err)
 	defer f.Close()
 	hdu := f.HDU(1)
-	table := hdu.(*fitsio.Table)
-	require.True(t, table.Type() == fitsio.BINARY_TBL)
+	table := hdu.(*cfitsio.Table)
+	require.True(t, table.Type() == cfitsio.BINARY_TBL)
 	require.Equal(t, "results", table.Name())
 	require.Equal(t, 4, table.NumCols())
 	require.Equal(t, int64(3), table.NumRows())
@@ -96,12 +104,14 @@ func TestFits_ForcedPhotometry(t *testing.T) {
 	w := sendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM forced_photometry LIMIT 3", service)
 	require.Equal(t, http.StatusOK, w.Code)
 	require.Equal(t, "application/fits", w.Header().Get("Content-Type"))
-	f, err := fitsio.Open(w.Body)
+	fname := writeFitsFile(t, w)
+	defer os.Remove(fname)
+	f, err := cfitsio.Open(fname, cfitsio.ReadOnly)
 	require.Nil(t, err)
 	defer f.Close()
 	hdu := f.HDU(1)
-	table := hdu.(*fitsio.Table)
-	require.True(t, table.Type() == fitsio.BINARY_TBL)
+	table := hdu.(*cfitsio.Table)
+	require.True(t, table.Type() == cfitsio.BINARY_TBL)
 	require.Equal(t, "results", table.Name())
 	require.Equal(t, 19, table.NumCols())
 	require.Equal(t, int64(3), table.NumRows())
@@ -122,12 +132,14 @@ func TestFits_Features(t *testing.T) {
 	w := sendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM feature LIMIT 3", service)
 	require.Equal(t, http.StatusOK, w.Code)
 	require.Equal(t, "application/fits", w.Header().Get("Content-Type"))
-	f, err := fitsio.Open(w.Body)
+	fname := writeFitsFile(t, w)
+	defer os.Remove(fname)
+	f, err := cfitsio.Open(fname, cfitsio.ReadOnly)
 	require.Nil(t, err)
 	defer f.Close()
 	hdu := f.HDU(1)
-	table := hdu.(*fitsio.Table)
-	require.True(t, table.Type() == fitsio.BINARY_TBL)
+	table := hdu.(*cfitsio.Table)
+	require.True(t, table.Type() == cfitsio.BINARY_TBL)
 	require.Equal(t, "results", table.Name())
 	require.Equal(t, 5, table.NumCols())
 	require.Equal(t, int64(3), table.NumRows())
@@ -148,12 +160,14 @@ func TestFits_Probabilities(t *testing.T) {
 	w := sendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM probability LIMIT 3", service)
 	require.Equal(t, http.StatusOK, w.Code)
 	require.Equal(t, "application/fits", w.Header().Get("Content-Type"))
-	f, err := fitsio.Open(w.Body)
+	fname := writeFitsFile(t, w)
+	defer os.Remove(fname)
+	f, err := cfitsio.Open(fname, cfitsio.ReadOnly)
 	require.Nil(t, err)
 	defer f.Close()
 	hdu := f.HDU(1)
-	table := hdu.(*fitsio.Table)
-	require.True(t, table.Type() == fitsio.BINARY_TBL)
+	table := hdu.(*cfitsio.Table)
+	require.True(t, table.Type() == cfitsio.BINARY_TBL)
 	require.Equal(t, "results", table.Name())
 	require.Equal(t, 6, table.NumCols())
 	require.Equal(t, int64(3), table.NumRows())
@@ -166,7 +180,7 @@ func TestFits_Probabilities(t *testing.T) {
 	require.Equal(t, 3, count)
 }
 
-func parseResponseData(t *testing.T, rows *fitsio.Rows) (int, []map[string]interface{}) {
+func parseResponseData(t *testing.T, rows *cfitsio.Rows) (int, []map[string]interface{}) {
 	parsedData := []map[string]interface{}{}
 	count := 0
 	for rows.Next() {
@@ -186,4 +200,14 @@ func assertColumnsExist(t *testing.T, columnNames []string, parsedData []map[str
 			require.True(t, ok)
 		}
 	}
+}
+
+func writeFitsFile(t *testing.T, w *httptest.ResponseRecorder) string {
+	f, err := os.CreateTemp("", "result.fits")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.Write(w.Body.Bytes())
+	defer f.Close()
+	return f.Name()
 }
