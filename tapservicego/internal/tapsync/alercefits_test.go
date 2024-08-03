@@ -13,8 +13,15 @@ import (
 )
 
 func TestFits_Object(t *testing.T) {
-	testhelpers.ClearALeRCEDB()
-	db := populateAlerceDB()
+	db, err := GetDB(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	testhelpers.ClearALeRCEDB(db)
+	err = testhelpers.PopulateALeRCEDB(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	service := NewTapSyncService()
 	w := sendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM object LIMIT 3", service)
@@ -41,8 +48,15 @@ func TestFits_Object(t *testing.T) {
 }
 
 func TestFits_Detection(t *testing.T) {
-	testhelpers.ClearALeRCEDB()
-	db := populateAlerceDB()
+	db, err := GetDB(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	testhelpers.ClearALeRCEDB(db)
+	err = testhelpers.PopulateALeRCEDB(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	service := NewTapSyncService()
 	w := sendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM detection LIMIT 3", service)
@@ -69,8 +83,15 @@ func TestFits_Detection(t *testing.T) {
 }
 
 func TestFits_NonDetection(t *testing.T) {
-	testhelpers.ClearALeRCEDB()
-	db := populateAlerceDB()
+	db, err := GetDB(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	testhelpers.ClearALeRCEDB(db)
+	err = testhelpers.PopulateALeRCEDB(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	service := NewTapSyncService()
 	w := sendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM non_detection LIMIT 3", service)
@@ -97,8 +118,15 @@ func TestFits_NonDetection(t *testing.T) {
 }
 
 func TestFits_ForcedPhotometry(t *testing.T) {
-	testhelpers.ClearALeRCEDB()
-	db := populateAlerceDB()
+	db, err := GetDB(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	testhelpers.ClearALeRCEDB(db)
+	err = testhelpers.PopulateALeRCEDB(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	service := NewTapSyncService()
 	w := sendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM forced_photometry LIMIT 3", service)
@@ -125,8 +153,15 @@ func TestFits_ForcedPhotometry(t *testing.T) {
 }
 
 func TestFits_Features(t *testing.T) {
-	testhelpers.ClearALeRCEDB()
-	db := populateAlerceDB()
+	db, err := GetDB(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	testhelpers.ClearALeRCEDB(db)
+	err = testhelpers.PopulateALeRCEDB(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	service := NewTapSyncService()
 	w := sendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM feature LIMIT 3", service)
@@ -153,8 +188,15 @@ func TestFits_Features(t *testing.T) {
 }
 
 func TestFits_Probabilities(t *testing.T) {
-	testhelpers.ClearALeRCEDB()
-	db := populateAlerceDB()
+	db, err := GetDB(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	testhelpers.ClearALeRCEDB(db)
+	err = testhelpers.PopulateALeRCEDB(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	service := NewTapSyncService()
 	w := sendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM probability LIMIT 3", service)

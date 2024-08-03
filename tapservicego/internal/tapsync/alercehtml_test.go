@@ -4,6 +4,7 @@ import (
 	"ataps/internal/testhelpers"
 	"ataps/pkg/alercedb"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -11,8 +12,15 @@ import (
 )
 
 func TestHtml_Object(t *testing.T) {
-	testhelpers.ClearALeRCEDB()
-	db := populateAlerceDB()
+	db, err := GetDB(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	testhelpers.ClearALeRCEDB(db)
+	err = testhelpers.PopulateALeRCEDB(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	service := NewTapSyncService()
 	w := sendTestQuery("LANG=PSQL&&FORMAT=html&&QUERY=SELECT * FROM object LIMIT 3", service)
@@ -44,8 +52,15 @@ func TestHtml_NonExistentTable(t *testing.T) {
 }
 
 func TestHtml_Detection(t *testing.T) {
-	testhelpers.ClearALeRCEDB()
-	db := populateAlerceDB()
+	db, err := GetDB(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	testhelpers.ClearALeRCEDB(db)
+	err = testhelpers.PopulateALeRCEDB(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	service := NewTapSyncService()
 	w := sendTestQuery("LANG=PSQL&&FORMAT=html&&QUERY=SELECT * FROM detection LIMIT 3", service)
@@ -71,8 +86,15 @@ func TestHtml_Detection(t *testing.T) {
 }
 
 func TestHtml_NonDetection(t *testing.T) {
-	testhelpers.ClearALeRCEDB()
-	db := populateAlerceDB()
+	db, err := GetDB(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	testhelpers.ClearALeRCEDB(db)
+	err = testhelpers.PopulateALeRCEDB(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	service := NewTapSyncService()
 	w := sendTestQuery("LANG=PSQL&&FORMAT=html&&QUERY=SELECT * FROM non_detection LIMIT 3", service)
@@ -98,8 +120,15 @@ func TestHtml_NonDetection(t *testing.T) {
 }
 
 func TestHtml_ForcedPhotometry(t *testing.T) {
-	testhelpers.ClearALeRCEDB()
-	db := populateAlerceDB()
+	db, err := GetDB(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	testhelpers.ClearALeRCEDB(db)
+	err = testhelpers.PopulateALeRCEDB(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	service := NewTapSyncService()
 	w := sendTestQuery("LANG=PSQL&&FORMAT=html&&QUERY=SELECT * FROM forced_photometry LIMIT 3", service)
@@ -125,8 +154,15 @@ func TestHtml_ForcedPhotometry(t *testing.T) {
 }
 
 func TestHtml_Features(t *testing.T) {
-	testhelpers.ClearALeRCEDB()
-	db := populateAlerceDB()
+	db, err := GetDB(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	testhelpers.ClearALeRCEDB(db)
+	err = testhelpers.PopulateALeRCEDB(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	service := NewTapSyncService()
 	w := sendTestQuery("LANG=PSQL&&FORMAT=html&&QUERY=SELECT * FROM feature LIMIT 3", service)
@@ -152,8 +188,15 @@ func TestHtml_Features(t *testing.T) {
 }
 
 func TestHtml_Probabilities(t *testing.T) {
-	testhelpers.ClearALeRCEDB()
-	db := populateAlerceDB()
+	db, err := GetDB(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	testhelpers.ClearALeRCEDB(db)
+	err = testhelpers.PopulateALeRCEDB(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	service := NewTapSyncService()
 	w := sendTestQuery("LANG=PSQL&&FORMAT=html&&QUERY=SELECT * FROM probability LIMIT 3", service)

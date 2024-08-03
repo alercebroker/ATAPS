@@ -16,11 +16,10 @@ import (
 // or an error if one occurs.
 // The URL should be in the format:
 // postgresql://user:password@host:port/database
+// or the space-separated format:
+// host=host user=user password=password port=port
 func GetDB(dbUrl string) (*sql.DB, error) {
-	dbUrl, err := getEncodedUrl(dbUrl)
-	if err != nil {
-		return nil, err
-	}
+	dbUrl = getEncodedUrl(dbUrl)
 	db, err := sql.Open("pgx", dbUrl)
 	if err != nil {
 		return nil, err
@@ -90,10 +89,18 @@ func HandleSQLQuery(query string, db *sql.DB) ([]map[string]interface{}, error) 
 	return results, nil
 }
 
-func getEncodedUrl(originalURL string) (string, error) {
+func getEncodedUrl(originalURL string) string {
 	parts := strings.SplitN(originalURL, ":", 3)
 	if len(parts) != 3 {
-		return "", fmt.Errorf("invalid URL format")
+		// using the space-separated format
+		parts := strings.SplitN(originalURL, " ", -1)
+
+		// Encode the password
+		password := strings.SplitN(parts[2], "=", 2)[1]
+		encodedPassword := url.QueryEscape(password)
+
+		// Reconstruct the URL with the encoded password
+		return fmt.Sprintf("%s %s password=%s %s", parts[0], parts[1], encodedPassword, parts[3])
 	}
 
 	// Encode the password
@@ -101,5 +108,5 @@ func getEncodedUrl(originalURL string) (string, error) {
 	encodedPassword := url.QueryEscape(password)
 
 	// Reconstruct the URL with the encoded password
-	return fmt.Sprintf("%s:%s:%s@%s", parts[0], parts[1], encodedPassword, strings.SplitN(parts[2], "@", 2)[1]), nil
+	return fmt.Sprintf("%s:%s:%s@%s", parts[0], parts[1], encodedPassword, strings.SplitN(parts[2], "@", 2)[1])
 }

@@ -44,7 +44,7 @@ func DropTables(db *sql.DB) error {
 }
 
 func createObjectTable(db *sql.DB) error {
-	query := `CREATE TABLE object (
+	query := `CREATE TABLE IF NOT EXISTS object (
 		oid VARCHAR(12) PRIMARY KEY,
 		meanra DOUBLE PRECISION NOT NULL,
 		meandec DOUBLE PRECISION NOT NULL,
