@@ -62,6 +62,7 @@ type Field struct {
 	Datatype    string `xml:"datatype,attr"`
 	Unit        string `xml:"unit,attr,omitempty"`
 	Ucd         string `xml:"ucd,attr,omitempty"`
+	ArraySize   string `xml:"arraysize,attr,omitempty"`
 }
 
 // Group represents a GROUP element in VOTable

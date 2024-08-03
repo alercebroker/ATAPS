@@ -5,14 +5,22 @@ import (
 	"ataps/pkg/alercedb"
 	"ataps/pkg/votable"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
 func TestVotable_Object(t *testing.T) {
-	testhelpers.ClearALeRCEDB()
-	db := populateAlerceDB()
+	db, err := GetDB(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	testhelpers.ClearALeRCEDB(db)
+	err = testhelpers.PopulateALeRCEDB(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	service := NewTapSyncService()
 	w := sendTestQuery("LANG=PSQL&&FORMAT=votable&&QUERY=SELECT * FROM object LIMIT 3", service)
@@ -29,8 +37,15 @@ func TestVotable_Object(t *testing.T) {
 }
 
 func TestVotable_Detection(t *testing.T) {
-	testhelpers.ClearALeRCEDB()
-	db := populateAlerceDB()
+	db, err := GetDB(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	testhelpers.ClearALeRCEDB(db)
+	err = testhelpers.PopulateALeRCEDB(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	service := NewTapSyncService()
 	w := sendTestQuery("LANG=PSQL&&FORMAT=votable&&QUERY=SELECT * FROM detection LIMIT 3", service)
@@ -47,8 +62,15 @@ func TestVotable_Detection(t *testing.T) {
 }
 
 func TestVotable_NonDetection(t *testing.T) {
-	testhelpers.ClearALeRCEDB()
-	db := populateAlerceDB()
+	db, err := GetDB(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	testhelpers.ClearALeRCEDB(db)
+	err = testhelpers.PopulateALeRCEDB(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	service := NewTapSyncService()
 	w := sendTestQuery("LANG=PSQL&&FORMAT=votable&&QUERY=SELECT * FROM non_detection LIMIT 3", service)
@@ -65,8 +87,15 @@ func TestVotable_NonDetection(t *testing.T) {
 }
 
 func TestVotable_ForcedPhotometry(t *testing.T) {
-	testhelpers.ClearALeRCEDB()
-	db := populateAlerceDB()
+	db, err := GetDB(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	testhelpers.ClearALeRCEDB(db)
+	err = testhelpers.PopulateALeRCEDB(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	service := NewTapSyncService()
 	w := sendTestQuery("LANG=PSQL&&FORMAT=votable&&QUERY=SELECT * FROM forced_photometry LIMIT 3", service)
@@ -83,8 +112,15 @@ func TestVotable_ForcedPhotometry(t *testing.T) {
 }
 
 func TestVotable_Features(t *testing.T) {
-	testhelpers.ClearALeRCEDB()
-	db := populateAlerceDB()
+	db, err := GetDB(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	testhelpers.ClearALeRCEDB(db)
+	err = testhelpers.PopulateALeRCEDB(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	service := NewTapSyncService()
 	w := sendTestQuery("LANG=PSQL&&FORMAT=votable&&QUERY=SELECT * FROM feature LIMIT 3", service)
@@ -101,8 +137,15 @@ func TestVotable_Features(t *testing.T) {
 }
 
 func TestVotable_Probabilities(t *testing.T) {
-	testhelpers.ClearALeRCEDB()
-	db := populateAlerceDB()
+	db, err := GetDB(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	testhelpers.ClearALeRCEDB(db)
+	err = testhelpers.PopulateALeRCEDB(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 	service := NewTapSyncService()
 	w := sendTestQuery("LANG=PSQL&&FORMAT=votable&&QUERY=SELECT * FROM probability LIMIT 3", service)

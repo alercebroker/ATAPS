@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"net/http"
+	"os"
 	"sort"
 	"testing"
 
@@ -14,8 +15,15 @@ import (
 
 func TestCsv(t *testing.T) {
 	test_get_csv_data_from_object := func(t *testing.T, table string, ensureObjectExistIn *string, overrideOid *string) [][]string {
-		testhelpers.ClearALeRCEDB()
-		db := populateAlerceDB()
+		db, err := GetDB(os.Getenv("DATABASE_URL"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		testhelpers.ClearALeRCEDB(db)
+		err = testhelpers.PopulateALeRCEDB(db)
+		if err != nil {
+			t.Fatal(err)
+		}
 		defer db.Close()
 		var oid string
 		if overrideOid == nil {
@@ -47,8 +55,15 @@ func TestCsv(t *testing.T) {
 	}
 
 	t.Run("TestCsv_Detections", func(t *testing.T) {
-		testhelpers.ClearALeRCEDB()
-		db := populateAlerceDB()
+		db, err := GetDB(os.Getenv("DATABASE_URL"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		testhelpers.ClearALeRCEDB(db)
+		err = testhelpers.PopulateALeRCEDB(db)
+		if err != nil {
+			t.Fatal(err)
+		}
 		defer db.Close()
 		service := NewTapSyncService()
 		w := sendTestQuery("LANG=PSQL&&FORMAT=csv&&QUERY=SELECT * FROM detection LIMIT 1", service)
@@ -77,8 +92,15 @@ func TestCsv(t *testing.T) {
 	})
 
 	t.Run("TestCsv_NonDetection", func(t *testing.T) {
-		testhelpers.ClearALeRCEDB()
-		db := populateAlerceDB()
+		db, err := GetDB(os.Getenv("DATABASE_URL"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		testhelpers.ClearALeRCEDB(db)
+		err = testhelpers.PopulateALeRCEDB(db)
+		if err != nil {
+			t.Fatal(err)
+		}
 		defer db.Close()
 		service := NewTapSyncService()
 		w := sendTestQuery("LANG=PSQL&&FORMAT=csv&&QUERY=SELECT * FROM non_detection LIMIT 1", service)
@@ -106,8 +128,15 @@ func TestCsv(t *testing.T) {
 	})
 
 	t.Run("TestCsv_ForcedPhotometry", func(t *testing.T) {
-		testhelpers.ClearALeRCEDB()
-		db := populateAlerceDB()
+		db, err := GetDB(os.Getenv("DATABASE_URL"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		testhelpers.ClearALeRCEDB(db)
+		err = testhelpers.PopulateALeRCEDB(db)
+		if err != nil {
+			t.Fatal(err)
+		}
 		defer db.Close()
 		service := NewTapSyncService()
 		w := sendTestQuery("LANG=PSQL&&FORMAT=csv&&QUERY=SELECT * FROM forced_photometry LIMIT 1", service)
@@ -135,8 +164,15 @@ func TestCsv(t *testing.T) {
 	})
 
 	t.Run("TestCsv_Features", func(t *testing.T) {
-		testhelpers.ClearALeRCEDB()
-		db := populateAlerceDB()
+		db, err := GetDB(os.Getenv("DATABASE_URL"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		testhelpers.ClearALeRCEDB(db)
+		err = testhelpers.PopulateALeRCEDB(db)
+		if err != nil {
+			t.Fatal(err)
+		}
 		defer db.Close()
 		service := NewTapSyncService()
 		w := sendTestQuery("LANG=PSQL&&FORMAT=csv&&QUERY=SELECT * FROM feature LIMIT 1", service)
@@ -164,8 +200,15 @@ func TestCsv(t *testing.T) {
 	})
 
 	t.Run("TestCsv_Objects", func(t *testing.T) {
-		testhelpers.ClearALeRCEDB()
-		db := populateAlerceDB()
+		db, err := GetDB(os.Getenv("DATABASE_URL"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		testhelpers.ClearALeRCEDB(db)
+		err = testhelpers.PopulateALeRCEDB(db)
+		if err != nil {
+			t.Fatal(err)
+		}
 		defer db.Close()
 		service := NewTapSyncService()
 		w := sendTestQuery("LANG=PSQL&&FORMAT=csv&&QUERY=SELECT * FROM object LIMIT 2", service)
@@ -182,8 +225,15 @@ func TestCsv(t *testing.T) {
 	})
 
 	t.Run("TestCsv_Probabilities", func(t *testing.T) {
-		testhelpers.ClearALeRCEDB()
-		db := populateAlerceDB()
+		db, err := GetDB(os.Getenv("DATABASE_URL"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		testhelpers.ClearALeRCEDB(db)
+		err = testhelpers.PopulateALeRCEDB(db)
+		if err != nil {
+			t.Fatal(err)
+		}
 		defer db.Close()
 		service := NewTapSyncService()
 		w := sendTestQuery("LANG=PSQL&&FORMAT=csv&&QUERY=SELECT * FROM probability LIMIT 1", service)

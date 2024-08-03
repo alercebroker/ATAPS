@@ -25,7 +25,9 @@ type Tapservicego struct{}
 // Builds the go package
 func (m *Tapservicego) BuildEnv(ctx context.Context, source *Directory) *Container {
 	return dag.Container().
-		From("golang:1.22").
+		From("golang:1.22.3-bookworm").
+		WithExec([]string{"apt-get", "update"}).
+		WithExec([]string{"apt-get", "install", "libcfitsio-dev", "--yes"}).
 		WithWorkdir("/usr/src/app").
 		WithFile("go.mod", source.File("go.mod")).
 		WithFile("go.sum", source.File("go.sum")).

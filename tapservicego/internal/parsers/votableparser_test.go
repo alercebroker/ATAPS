@@ -7,6 +7,39 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestGetDataType(t *testing.T) {
+	valuesToTest := []interface{}{
+		true,
+		false,
+		int8(1),
+		uint8(1),
+		int16(1),
+		int32(1),
+		int64(1),
+		int(1),
+		float32(1.0),
+		float64(1.0),
+		"string",
+	}
+	expectedResults := []string{
+		"boolean",
+		"boolean",
+		"short",
+		"unsignedByte",
+		"short",
+		"int",
+		"long",
+		"long",
+		"float",
+		"double",
+		"char",
+	}
+	for i, value := range valuesToTest {
+		result := getDataType(value)
+		assert.Equal(t, expectedResults[i], result)
+	}
+}
+
 func TestCreateVOTable(t *testing.T) {
 	data := []map[string]interface{}{
 		{"a": 1, "b": 2},
@@ -26,6 +59,8 @@ func TestCreateVOTable(t *testing.T) {
 	assert.Equal(t, "Results of the query", votable.Resource.Tables[0].Description)
 	assert.Equal(t, "a", votable.Resource.Tables[0].Fields[0].Name)
 	assert.Equal(t, "b", votable.Resource.Tables[0].Fields[1].Name)
+	assert.Equal(t, "long", votable.Resource.Tables[0].Fields[0].Datatype)
+	assert.Equal(t, "long", votable.Resource.Tables[0].Fields[1].Datatype)
 	assert.Equal(t, "1", votable.Resource.Tables[0].Data.TableData.Rows[0].Columns[0].Value)
 	assert.Equal(t, "2", votable.Resource.Tables[0].Data.TableData.Rows[0].Columns[1].Value)
 	assert.Equal(t, "3", votable.Resource.Tables[0].Data.TableData.Rows[1].Columns[0].Value)

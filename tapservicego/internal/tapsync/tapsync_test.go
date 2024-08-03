@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dirodriguezm/fitsio"
+	"github.com/astrogo/cfitsio"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 )
@@ -205,7 +205,7 @@ func TestVOTableQueries(t *testing.T) {
 		<INFO name="QUERY_STATUS" value="OK"></INFO>
 		<TABLE name="results">
 			<DESCRIPTION>Results of the query</DESCRIPTION>
-			<FIELD name="?column?" datatype=""></FIELD>
+			<FIELD name="?column?" datatype="char" arraysize="100*"></FIELD>
 			<DATA>
 				<TABLEDATA>
 					<TR>
@@ -235,13 +235,15 @@ func TestFitsQueries(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, "application/fits", w.Header().Get("Content-Type"))
 		// read the fits file and parse it
-		f, err := fitsio.Open(w.Body)
+		fname := writeFitsFile(t, w)
+		defer os.Remove(fname)
+		f, err := cfitsio.Open(fname, cfitsio.ReadOnly)
 		if err != nil {
 			t.Fatal(err)
 		}
 		defer f.Close()
 		hdu := f.HDU(1)
-		table := hdu.(*fitsio.Table)
+		table := hdu.(*cfitsio.Table)
 		assert.Equal(t, "results", table.Name())
 		assert.Equal(t, 3, table.NumCols()) // id, name, number
 		assert.Equal(t, int64(1), table.NumRows())

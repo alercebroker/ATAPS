@@ -1,30 +1,14 @@
 package tapsync
 
 import (
-	"ataps/internal/testhelpers"
 	"bufio"
-	"database/sql"
-	"log"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"reflect"
 	"strings"
 
 	"golang.org/x/net/html"
 )
-
-func populateAlerceDB() *sql.DB {
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = testhelpers.PopulateALeRCEDB(db)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return db
-}
 
 func sendTestQuery(query string, service *TapSyncService) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()

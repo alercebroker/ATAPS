@@ -4,7 +4,9 @@ import (
 	"ataps/internal/parsers"
 	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"slices"
 
 	"github.com/gin-gonic/gin"
@@ -44,14 +46,30 @@ func setResponse(c *gin.Context, sqlResult []map[string]interface{}, format stri
 		c.Header("Content-Length", fmt.Sprintf("%d", len(result)))
 		c.String(http.StatusOK, result)
 	case "fits":
-		result, err := parsers.ParseFits(sqlResult)
+		fname, err := parsers.ParseFits(sqlResult)
 		if err != nil {
 			return err
 		}
+		// Open the file
+		file, err := os.Open(fname)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		// Get file info
+		fileInfo, err := file.Stat()
+		if err != nil {
+			return err
+		}
+		c.Header("Content-Description", "File Transfer")
+		c.Header("Content-Transfer-Encoding", "binary")
+		c.Header("Content-Disposition", "attachment; filename=results.fits")
 		c.Header("Content-Type", "application/fits")
-		c.Header("Content-Encoding", "UTF-8")
-		c.Header("Content-Length", fmt.Sprintf("%d", result.Len()))
-		c.Data(http.StatusOK, "application/fits", result.Bytes())
+		c.DataFromReader(http.StatusOK, fileInfo.Size(), "application/fits", file, nil)
+		// remove the file
+		if err := os.Remove(fname); err != nil {
+			log.Printf("Error removing file %s: %v", fname, err)
+		}
 	case "text":
 		result := parsers.ParseText(sqlResult)
 		c.Header("Content-Type", "text/plain")

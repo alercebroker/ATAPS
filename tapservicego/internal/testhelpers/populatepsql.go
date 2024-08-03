@@ -3,20 +3,7 @@ package testhelpers
 import (
 	"ataps/pkg/alercedb"
 	"database/sql"
-	"os"
 )
-
-func GetDB(url string) (*sql.DB, error) {
-	db, err := sql.Open("pgx", url)
-	if err != nil {
-		return nil, err
-	}
-	err = db.Ping()
-	if err != nil {
-		return nil, err
-	}
-	return db, nil
-}
 
 func PopulateDb(db *sql.DB) error {
 	_, err := db.Exec("CREATE TABLE IF NOT EXISTS test (id SERIAL PRIMARY KEY, name TEXT, number INT)")
@@ -70,14 +57,8 @@ func PopulateALeRCEDB(db *sql.DB) error {
 	return nil
 }
 
-func ClearALeRCEDB() error {
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	_, err = db.Exec("DISCARD ALL")
+func ClearALeRCEDB(db *sql.DB) error {
+	_, err := db.Exec("DISCARD ALL")
 	if err != nil {
 		return err
 	}

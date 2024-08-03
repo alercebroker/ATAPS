@@ -4,6 +4,7 @@ import (
 	"ataps/pkg/votable"
 	"encoding/xml"
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 )
@@ -39,10 +40,60 @@ func addFields(data []map[string]interface{}) []votable.Field {
 	}
 	sort.Strings(keys)
 	for _, key := range keys {
-		// TODO: add datatype, unit, description, etc.
-		fields = append(fields, votable.Field{Name: key})
+		// TODO: add unit, description, etc.
+		datatype := getDataType(data[0][key])
+		field := votable.Field{Name: key, Datatype: datatype}
+		arraySize := getArraySize(data[0], key, datatype)
+		if arraySize != "0" {
+			field.ArraySize = arraySize
+		}
+		fields = append(fields, field)
 	}
 	return fields
+}
+
+func getArraySize(val map[string]interface{}, key string, datatype string) string {
+	if val[key] == nil {
+		return "0"
+	}
+	if datatype == "char" {
+		return "100*"
+	}
+	return "0"
+}
+
+func getDataType(v interface{}) string {
+	if v == nil {
+		return "float"
+	}
+
+	t := reflect.TypeOf(v)
+	k := t.Kind()
+
+	switch k {
+	case reflect.Bool:
+		return "boolean"
+	case reflect.Int8, reflect.Int16:
+		return "short"
+	case reflect.Uint8:
+		return "unsignedByte"
+	case reflect.Int32:
+		return "int"
+	case reflect.Int64, reflect.Int:
+		return "long"
+	case reflect.Float32:
+		return "float"
+	case reflect.Float64:
+		return "double"
+	case reflect.Complex64:
+		return "floatComplex"
+	case reflect.Complex128:
+		return "doubleComplex"
+	case reflect.String:
+		return "char"
+	default:
+		return "unknown"
+	}
 }
 
 func addTableData(data []map[string]interface{}) votable.TableData {
@@ -61,6 +112,10 @@ func addColumns(row map[string]interface{}) []votable.Column {
 	}
 	sort.Strings(keys)
 	for _, key := range keys {
+		if row[key] == nil {
+			columns = append(columns, votable.Column{Value: ""})
+			continue
+		}
 		columns = append(columns, votable.Column{Value: fmt.Sprintf("%v", row[key])})
 	}
 	return columns
