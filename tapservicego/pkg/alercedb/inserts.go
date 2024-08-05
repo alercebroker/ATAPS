@@ -2,6 +2,7 @@ package alercedb
 
 import (
 	"database/sql"
+	"log"
 )
 
 func InsertSampleDetections(db *sql.DB, number int, oidPool []string) error {
@@ -65,21 +66,22 @@ func InsertSampleProbabilities(db *sql.DB, oidPool []string, classPool []string,
 // InsertObjects inserts the provided slice of objects
 // into the database using the provided database connection
 func insertObjects(objects []Object, db *sql.DB) error {
-	query := `INSERT INTO object (
-		oid,
-		meanra,
-		meandec,
-		sigmara,
-		sigmadec,
-		firstmjd,
-		lastmjd,
-		ndet,
-		stellar,
-		corrected
-	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare(`INSERT INTO object (
+        oid, meanra, meandec, sigmara, sigmadec, firstmjd, lastmjd, ndet, stellar, corrected
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
 	for _, object := range objects {
-		_, err := db.Exec(
-			query,
+		_, err := stmt.Exec(
 			object.Oid,
 			object.MeanRA,
 			object.MeanDec,
@@ -92,15 +94,23 @@ func insertObjects(objects []Object, db *sql.DB) error {
 			object.Corrected,
 		)
 		if err != nil {
+			log.Printf("Error with object %s: %v", object.Oid, err)
 			return err
 		}
 	}
-	return nil
+
+	return tx.Commit()
 }
 
 // Insert detections into the database
 func insertDetections(detections []Detection, db *sql.DB) error {
-	query := `INSERT INTO detection (
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare(`INSERT INTO detection (
 		candid,
 		oid,
 		mjd,
@@ -120,10 +130,14 @@ func insertDetections(detections []Detection, db *sql.DB) error {
 		dubious,
 		parent_candid,
 		has_stamp
-	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19);`
+	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19);`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
 	for _, detection := range detections {
-		_, err := db.Exec(
-			query,
+		_, err := stmt.Exec(
 			detection.Candid,
 			detection.Oid,
 			detection.MJD,
@@ -145,23 +159,35 @@ func insertDetections(detections []Detection, db *sql.DB) error {
 			detection.HasStamp,
 		)
 		if err != nil {
+			log.Printf("Error with detection %d: %v", detection.Candid, err)
 			return err
 		}
 	}
-	return nil
+
+	return tx.Commit()
 }
 
 // insertNonDetections inserts the provided slice of non-detections
 func insertNonDetections(nonDetections []NonDetection, db *sql.DB) error {
-	query := `INSERT INTO non_detection (
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare(`INSERT INTO non_detection (
 		oid,
 		fid,
 		mjd,
 		diffmaglim
-	) VALUES ($1, $2, $3, $4);`
+	) VALUES ($1, $2, $3, $4);`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
 	for _, nonDetection := range nonDetections {
-		_, err := db.Exec(
-			query,
+		_, err := stmt.Exec(
 			nonDetection.Oid,
 			nonDetection.Fid,
 			nonDetection.Mjd,
@@ -171,12 +197,19 @@ func insertNonDetections(nonDetections []NonDetection, db *sql.DB) error {
 			return err
 		}
 	}
-	return nil
+
+	return tx.Commit()
 }
 
 // insertForcedPhotometry inserts the provided slice of forced photometry
 func insertForcedPhotometry(forcedPhotometry []ForcedPhotometry, db *sql.DB) error {
-	query := `INSERT INTO forced_photometry (
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare(`INSERT INTO forced_photometry (
 		candid,
 		oid,
 		mjd,
@@ -196,10 +229,14 @@ func insertForcedPhotometry(forcedPhotometry []ForcedPhotometry, db *sql.DB) err
 		dubious,
 		parent_candid,
 		has_stamp
-	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19);`
+	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19);`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
 	for _, forcedPhotometry := range forcedPhotometry {
-		_, err := db.Exec(
-			query,
+		_, err := stmt.Exec(
 			forcedPhotometry.Candid,
 			forcedPhotometry.Oid,
 			forcedPhotometry.MJD,
@@ -221,24 +258,36 @@ func insertForcedPhotometry(forcedPhotometry []ForcedPhotometry, db *sql.DB) err
 			forcedPhotometry.HasStamp,
 		)
 		if err != nil {
+			log.Printf("Error with forced photometry %d: %v", forcedPhotometry.Candid, err)
 			return err
 		}
 	}
-	return nil
+
+	return tx.Commit()
 }
 
 // insertFeatures inserts the provided slice of features
 func insertFeatures(features []Feature, db *sql.DB) error {
-	query := `INSERT INTO feature (
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare(`INSERT INTO feature (
 		oid,
 		name,
 		value,
 		fid,
 		version
-	) VALUES ($1, $2, $3, $4, $5);`
+	) VALUES ($1, $2, $3, $4, $5);`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
 	for _, feature := range features {
-		_, err := db.Exec(
-			query,
+		_, err := stmt.Exec(
 			feature.Oid,
 			feature.Name,
 			feature.Value,
@@ -246,25 +295,36 @@ func insertFeatures(features []Feature, db *sql.DB) error {
 			feature.Version,
 		)
 		if err != nil {
+			log.Printf("Error with feature %s: %v", feature.Name, err)
 			return err
 		}
 	}
-	return nil
+	return tx.Commit()
 }
 
 // insertProbabilities inserts the provided slice of probabilities
 func insertProbabilities(probabilities []Probability, db *sql.DB) error {
-	query := `INSERT INTO probability (
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare(`INSERT INTO probability (
 		oid,
 		class_name,
 		classifier_name,
 		classifier_version,
 		probability,
 		ranking
-	) VALUES ($1, $2, $3, $4, $5, $6);`
+	) VALUES ($1, $2, $3, $4, $5, $6);`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
 	for _, probability := range probabilities {
-		_, err := db.Exec(
-			query,
+		_, err := stmt.Exec(
 			probability.Oid,
 			probability.ClassName,
 			probability.ClassifierName,
@@ -273,8 +333,9 @@ func insertProbabilities(probabilities []Probability, db *sql.DB) error {
 			probability.Ranking,
 		)
 		if err != nil {
+			log.Printf("Error with probability %s: %v", probability.ClassName, err)
 			return err
 		}
 	}
-	return nil
+	return tx.Commit()
 }

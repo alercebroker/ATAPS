@@ -1,218 +1,149 @@
 package alercedb
 
 import (
-	"database/sql"
-	"log"
-	"os"
-	"testing"
-
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateTables(t *testing.T) {
-	restoreDatabase()
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	err = CreateTables(db)
-	assert.Nil(t, err)
-	assertTableExists("object", db, t)
-	assertTableExists("detection", db, t)
-	assertTableExists("non_detection", db, t)
+func (suite *AlerceSuite) TestCreateTables() {
+	RestoreDatabase(suite.DB, suite)
+	err := CreateTables(suite.DB)
+	suite.Require().Nil(err)
+	suite.assertTableExists("object")
+	suite.assertTableExists("detection")
+	suite.assertTableExists("non_detection")
 }
 
-func TestCreateObjectsTable(t *testing.T) {
-	restoreDatabase()
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	assert.Nil(t, err)
-	defer db.Close()
-	err = createObjectTable(db)
-	assert.Nil(t, err)
-	assertTableExists("object", db, t)
+func (suite *AlerceSuite) TestCreateObjectsTable() {
+	RestoreDatabase(suite.DB, suite)
+	err := createObjectTable(suite.DB)
+	suite.Require().Nil(err)
+	suite.assertTableExists("object")
 }
 
-func TestCreateObjectsTableIndex(t *testing.T) {
-	restoreDatabase()
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	err = createObjectTable(db)
-	assert.Nil(t, err)
+func (suite *AlerceSuite) TestCreateObjectsTableIndex() {
+	RestoreDatabase(suite.DB, suite)
+	err := createObjectTable(suite.DB)
+	suite.Require().Nil(err)
 	query := `SELECT COUNT(*) FROM pg_indexes WHERE tablename = 'object'`
 	var count int
-	err = db.QueryRow(query).Scan(&count)
-	assert.Nil(t, err)
-	assert.Equal(t, 5, count)
+	err = suite.DB.QueryRow(query).Scan(&count)
+	suite.Require().Nil(err)
+	suite.Require().Equal(5, count)
 }
 
-func TestCreateDetectionsTable(t *testing.T) {
-	restoreDatabase()
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	err = createObjectTable(db)
-	assert.Nil(t, err)
-	err = createDetectionsTable(db)
-	assert.Nil(t, err)
-	assertTableExists("detection", db, t)
+func (suite *AlerceSuite) TestCreateDetectionsTable() {
+	RestoreDatabase(suite.DB, suite)
+	err := createObjectTable(suite.DB)
+	suite.Require().Nil(err)
+	err = createDetectionsTable(suite.DB)
+	suite.Require().Nil(err)
+	suite.assertTableExists("detection")
 }
 
-func TestCreateDetectionsTableIndex(t *testing.T) {
-	restoreDatabase()
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	err = createObjectTable(db)
-	assert.Nil(t, err)
-	err = createDetectionsTable(db)
-	assert.Nil(t, err)
+func (suite *AlerceSuite) TestCreateDetectionsTableIndex() {
+	RestoreDatabase(suite.DB, suite)
+	err := createObjectTable(suite.DB)
+	suite.Require().Nil(err)
+	err = createDetectionsTable(suite.DB)
+	suite.Require().Nil(err)
 	query := `SELECT COUNT(*) FROM pg_indexes WHERE tablename = 'detection'`
 	var count int
-	err = db.QueryRow(query).Scan(&count)
-	assert.Nil(t, err)
-	assert.Equal(t, 2, count)
+	err = suite.DB.QueryRow(query).Scan(&count)
+	suite.Require().Nil(err)
+	suite.Require().Equal(2, count)
 }
 
-func TestCreateNonDetectionsTable(t *testing.T) {
-	restoreDatabase()
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	err = createObjectTable(db)
-	assert.Nil(t, err)
-	err = createNonDetectionsTable(db)
-	assert.Nil(t, err)
-	assertTableExists("non_detection", db, t)
+func (suite *AlerceSuite) TestCreateNonDetectionsTable() {
+	RestoreDatabase(suite.DB, suite)
+	err := createObjectTable(suite.DB)
+	suite.Require().Nil(err)
+	err = createNonDetectionsTable(suite.DB)
+	suite.Require().Nil(err)
+	suite.assertTableExists("non_detection")
 }
 
-func TestCreateNonDetectionsTableIndex(t *testing.T) {
-	restoreDatabase()
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	err = createObjectTable(db)
-	assert.Nil(t, err)
-	err = createNonDetectionsTable(db)
-	assert.Nil(t, err)
+func (suite *AlerceSuite) TestCreateNonDetectionsTableIndex() {
+	RestoreDatabase(suite.DB, suite)
+	err := createObjectTable(suite.DB)
+	suite.Require().Nil(err)
+	err = createNonDetectionsTable(suite.DB)
+	suite.Require().Nil(err)
 	query := `SELECT COUNT(*) FROM pg_indexes WHERE tablename = 'non_detection'`
 	var count int
-	err = db.QueryRow(query).Scan(&count)
-	assert.Nil(t, err)
-	assert.Equal(t, 2, count)
+	err = suite.DB.QueryRow(query).Scan(&count)
+	suite.Require().Nil(err)
+	suite.Require().Equal(2, count)
 }
 
-func TestCreateForcedPhotometryTable(t *testing.T) {
-	restoreDatabase()
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	err = createObjectTable(db)
-	assert.Nil(t, err)
-	err = createForcedPhotometryTable(db)
-	assert.Nil(t, err)
-	assertTableExists("forced_photometry", db, t)
+func (suite *AlerceSuite) TestCreateForcedPhotometryTable() {
+	RestoreDatabase(suite.DB, suite)
+	err := createObjectTable(suite.DB)
+	suite.Require().Nil(err)
+	err = createForcedPhotometryTable(suite.DB)
+	suite.Require().Nil(err)
+	suite.assertTableExists("forced_photometry")
 }
-func TestCreateForcedPhotometryTableIndex(t *testing.T) {
-	restoreDatabase()
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	err = createObjectTable(db)
-	assert.Nil(t, err)
-	err = createForcedPhotometryTable(db)
-	assert.Nil(t, err)
+func (suite *AlerceSuite) TestCreateForcedPhotometryTableIndex() {
+	RestoreDatabase(suite.DB, suite)
+	err := createObjectTable(suite.DB)
+	suite.Require().Nil(err)
+	err = createForcedPhotometryTable(suite.DB)
+	suite.Require().Nil(err)
 	query := `SELECT COUNT(*) FROM pg_indexes WHERE tablename = 'forced_photometry'`
 	var count int
-	err = db.QueryRow(query).Scan(&count)
-	assert.Nil(t, err)
-	assert.Equal(t, 2, count)
+	err = suite.DB.QueryRow(query).Scan(&count)
+	suite.Require().Nil(err)
+	suite.Require().Equal(2, count)
 }
 
-func TestCreateFeatureTable(t *testing.T) {
-	restoreDatabase()
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	err = createObjectTable(db)
-	assert.Nil(t, err)
-	err = createFeaturesTable(db)
-	assert.Nil(t, err)
-	assertTableExists("feature", db, t)
+func (suite *AlerceSuite) TestCreateFeatureTable() {
+	RestoreDatabase(suite.DB, suite)
+	err := createObjectTable(suite.DB)
+	suite.Require().Nil(err)
+	err = createFeaturesTable(suite.DB)
+	suite.Require().Nil(err)
+	suite.assertTableExists("feature")
 }
 
-func TestCreateFeatureTableIndex(t *testing.T) {
-	restoreDatabase()
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	err = createObjectTable(db)
-	assert.Nil(t, err)
-	err = createFeaturesTable(db)
-	assert.Nil(t, err)
+func (suite *AlerceSuite) TestCreateFeatureTableIndex() {
+	RestoreDatabase(suite.DB, suite)
+	err := createObjectTable(suite.DB)
+	suite.Require().Nil(err)
+	err = createFeaturesTable(suite.DB)
+	suite.Require().Nil(err)
 	query := `SELECT COUNT(*) FROM pg_indexes WHERE tablename = 'feature'`
 	var count int
-	err = db.QueryRow(query).Scan(&count)
-	assert.Nil(t, err)
-	assert.Equal(t, 2, count)
+	err = suite.DB.QueryRow(query).Scan(&count)
+	suite.Require().Nil(err)
+	suite.Require().Equal(2, count)
 }
 
-func TestCreateProbabilityTable(t *testing.T) {
-	restoreDatabase()
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	err = createObjectTable(db)
-	assert.Nil(t, err)
-	err = createProbabilitiesTable(db)
-	assert.Nil(t, err)
-	assertTableExists("probability", db, t)
+func (suite *AlerceSuite) TestCreateProbabilityTable() {
+	RestoreDatabase(suite.DB, suite)
+	err := createObjectTable(suite.DB)
+	suite.Require().Nil(err)
+	err = createProbabilitiesTable(suite.DB)
+	suite.Require().Nil(err)
+	suite.assertTableExists("probability")
 }
 
-func TestCreateProbabilityTableIndex(t *testing.T) {
-	restoreDatabase()
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	err = createObjectTable(db)
-	assert.Nil(t, err)
-	err = createProbabilitiesTable(db)
-	assert.Nil(t, err)
+func (suite *AlerceSuite) TestCreateProbabilityTableIndex() {
+	RestoreDatabase(suite.DB, suite)
+	err := createObjectTable(suite.DB)
+	suite.Require().Nil(err)
+	err = createProbabilitiesTable(suite.DB)
+	suite.Require().Nil(err)
 	query := `SELECT COUNT(*) FROM pg_indexes WHERE tablename = 'probability'`
 	var count int
-	err = db.QueryRow(query).Scan(&count)
-	assert.Nil(t, err)
-	assert.Equal(t, 5, count)
+	err = suite.DB.QueryRow(query).Scan(&count)
+	suite.Require().Nil(err)
+	suite.Require().Equal(5, count)
 }
 
-func assertTableExists(tableName string, db *sql.DB, t *testing.T) {
+func (suite *AlerceSuite) assertTableExists(tableName string) {
 	query := `SELECT COUNT(*) FROM information_schema.tables WHERE table_name = $1;`
 	var count int
-	err := db.QueryRow(query, tableName).Scan(&count)
-	assert.Nil(t, err)
-	assert.Equal(t, 1, count)
+	err := suite.DB.QueryRow(query, tableName).Scan(&count)
+	suite.Require().Nil(err)
+	suite.Require().Equal(1, count)
 }

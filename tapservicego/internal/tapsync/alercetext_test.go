@@ -1,34 +1,18 @@
 package tapsync
 
 import (
-	"ataps/internal/testhelpers"
 	"ataps/pkg/alercedb"
 	"net/http"
-	"os"
-	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
-func TestText_Object(t *testing.T) {
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	testhelpers.ClearALeRCEDB(db)
-	err = testhelpers.PopulateALeRCEDB(db)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	service := NewTapSyncService()
-	w := sendTestQuery("LANG=PSQL&&FORMAT=text&&QUERY=SELECT * FROM object LIMIT 3", service)
-	require.Equal(t, http.StatusOK, w.Code)
-	require.Equal(t, "text/plain", w.Header().Get("Content-Type"))
+func (suite *AlerceTestSuite) TestText_Object() {
+	w := SendTestQuery("LANG=PSQL&&FORMAT=text&&QUERY=SELECT * FROM object LIMIT 3", suite.Service)
+	suite.Require().Equal(http.StatusOK, w.Code)
+	suite.Require().Equal("text/plain", w.Header().Get("Content-Type"))
 	var data []string
 	var headers []string
-	err = parseTextTable(w.Body.String(), &data, &headers)
-	require.NoError(t, err)
+	err := ParseTextTable(w.Body.String(), &data, &headers)
+	suite.Require().NoError(err)
 	var rows []map[string]string
 	for i := 0; i < len(data); i += len(headers) {
 		row := make(map[string]string)
@@ -37,30 +21,19 @@ func TestText_Object(t *testing.T) {
 		}
 		rows = append(rows, row)
 	}
-	require.Len(t, rows, 3)
-	columnNames := getColumnNames(alercedb.Object{})
-	require.ElementsMatch(t, headers, columnNames)
+	suite.Require().Len(rows, 3)
+	columnNames := GetColumnNames(alercedb.Object{})
+	suite.Require().ElementsMatch(headers, columnNames)
 }
 
-func TestText_Detection(t *testing.T) {
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	testhelpers.ClearALeRCEDB(db)
-	err = testhelpers.PopulateALeRCEDB(db)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	service := NewTapSyncService()
-	w := sendTestQuery("LANG=PSQL&&FORMAT=text&&QUERY=SELECT * FROM detection LIMIT 3", service)
-	require.Equal(t, http.StatusOK, w.Code)
-	require.Equal(t, "text/plain", w.Header().Get("Content-Type"))
+func (suite *AlerceTestSuite) TestText_Detection() {
+	w := SendTestQuery("LANG=PSQL&&FORMAT=text&&QUERY=SELECT * FROM detection LIMIT 3", suite.Service)
+	suite.Require().Equal(http.StatusOK, w.Code)
+	suite.Require().Equal("text/plain", w.Header().Get("Content-Type"))
 	var data []string
 	var headers []string
-	err = parseTextTable(w.Body.String(), &data, &headers)
-	require.NoError(t, err)
+	err := ParseTextTable(w.Body.String(), &data, &headers)
+	suite.Require().NoError(err)
 	var rows []map[string]string
 	for i := 0; i < len(data); i += len(headers) {
 		row := make(map[string]string)
@@ -69,30 +42,19 @@ func TestText_Detection(t *testing.T) {
 		}
 		rows = append(rows, row)
 	}
-	require.Len(t, rows, 3)
-	columnNames := getColumnNames(alercedb.Detection{})
-	require.ElementsMatch(t, headers, columnNames)
+	suite.Require().Len(rows, 3)
+	columnNames := GetColumnNames(alercedb.Detection{})
+	suite.Require().ElementsMatch(headers, columnNames)
 }
 
-func TestText_NonDetection(t *testing.T) {
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	testhelpers.ClearALeRCEDB(db)
-	err = testhelpers.PopulateALeRCEDB(db)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	service := NewTapSyncService()
-	w := sendTestQuery("LANG=PSQL&&FORMAT=text&&QUERY=SELECT * FROM non_detection LIMIT 3", service)
-	require.Equal(t, http.StatusOK, w.Code)
-	require.Equal(t, "text/plain", w.Header().Get("Content-Type"))
+func (suite *AlerceTestSuite) TestText_NonDetection() {
+	w := SendTestQuery("LANG=PSQL&&FORMAT=text&&QUERY=SELECT * FROM non_detection LIMIT 3", suite.Service)
+	suite.Require().Equal(http.StatusOK, w.Code)
+	suite.Require().Equal("text/plain", w.Header().Get("Content-Type"))
 	var data []string
 	var headers []string
-	err = parseTextTable(w.Body.String(), &data, &headers)
-	require.NoError(t, err)
+	err := ParseTextTable(w.Body.String(), &data, &headers)
+	suite.Require().NoError(err)
 	var rows []map[string]string
 	for i := 0; i < len(data); i += len(headers) {
 		row := make(map[string]string)
@@ -101,30 +63,19 @@ func TestText_NonDetection(t *testing.T) {
 		}
 		rows = append(rows, row)
 	}
-	require.Len(t, rows, 3)
-	columnNames := getColumnNames(alercedb.NonDetection{})
-	require.ElementsMatch(t, headers, columnNames)
+	suite.Require().Len(rows, 3)
+	columnNames := GetColumnNames(alercedb.NonDetection{})
+	suite.Require().ElementsMatch(headers, columnNames)
 }
 
-func TestText_ForcedPhotometry(t *testing.T) {
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	testhelpers.ClearALeRCEDB(db)
-	err = testhelpers.PopulateALeRCEDB(db)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	service := NewTapSyncService()
-	w := sendTestQuery("LANG=PSQL&&FORMAT=text&&QUERY=SELECT * FROM forced_photometry LIMIT 3", service)
-	require.Equal(t, http.StatusOK, w.Code)
-	require.Equal(t, "text/plain", w.Header().Get("Content-Type"))
+func (suite *AlerceTestSuite) TestText_ForcedPhotometry() {
+	w := SendTestQuery("LANG=PSQL&&FORMAT=text&&QUERY=SELECT * FROM forced_photometry LIMIT 3", suite.Service)
+	suite.Require().Equal(http.StatusOK, w.Code)
+	suite.Require().Equal("text/plain", w.Header().Get("Content-Type"))
 	var data []string
 	var headers []string
-	err = parseTextTable(w.Body.String(), &data, &headers)
-	require.NoError(t, err)
+	err := ParseTextTable(w.Body.String(), &data, &headers)
+	suite.Require().NoError(err)
 	var rows []map[string]string
 	for i := 0; i < len(data); i += len(headers) {
 		row := make(map[string]string)
@@ -133,30 +84,19 @@ func TestText_ForcedPhotometry(t *testing.T) {
 		}
 		rows = append(rows, row)
 	}
-	require.Len(t, rows, 3)
-	columnNames := getColumnNames(alercedb.ForcedPhotometry{})
-	require.ElementsMatch(t, headers, columnNames)
+	suite.Require().Len(rows, 3)
+	columnNames := GetColumnNames(alercedb.ForcedPhotometry{})
+	suite.Require().ElementsMatch(headers, columnNames)
 }
 
-func TestText_Features(t *testing.T) {
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	testhelpers.ClearALeRCEDB(db)
-	err = testhelpers.PopulateALeRCEDB(db)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	service := NewTapSyncService()
-	w := sendTestQuery("LANG=PSQL&&FORMAT=text&&QUERY=SELECT * FROM feature LIMIT 3", service)
-	require.Equal(t, http.StatusOK, w.Code)
-	require.Equal(t, "text/plain", w.Header().Get("Content-Type"))
+func (suite *AlerceTestSuite) TestText_Features() {
+	w := SendTestQuery("LANG=PSQL&&FORMAT=text&&QUERY=SELECT * FROM feature LIMIT 3", suite.Service)
+	suite.Require().Equal(http.StatusOK, w.Code)
+	suite.Require().Equal("text/plain", w.Header().Get("Content-Type"))
 	var data []string
 	var headers []string
-	err = parseTextTable(w.Body.String(), &data, &headers)
-	require.NoError(t, err)
+	err := ParseTextTable(w.Body.String(), &data, &headers)
+	suite.Require().NoError(err)
 	var rows []map[string]string
 	for i := 0; i < len(data); i += len(headers) {
 		row := make(map[string]string)
@@ -165,30 +105,19 @@ func TestText_Features(t *testing.T) {
 		}
 		rows = append(rows, row)
 	}
-	require.Len(t, rows, 3)
-	columnNames := getColumnNames(alercedb.Feature{})
-	require.ElementsMatch(t, headers, columnNames)
+	suite.Require().Len(rows, 3)
+	columnNames := GetColumnNames(alercedb.Feature{})
+	suite.Require().ElementsMatch(headers, columnNames)
 }
 
-func TestText_Probabilities(t *testing.T) {
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	testhelpers.ClearALeRCEDB(db)
-	err = testhelpers.PopulateALeRCEDB(db)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	service := NewTapSyncService()
-	w := sendTestQuery("LANG=PSQL&&FORMAT=text&&QUERY=SELECT * FROM probability LIMIT 3", service)
-	require.Equal(t, http.StatusOK, w.Code)
-	require.Equal(t, "text/plain", w.Header().Get("Content-Type"))
+func (suite *AlerceTestSuite) TestText_Probabilities() {
+	w := SendTestQuery("LANG=PSQL&&FORMAT=text&&QUERY=SELECT * FROM probability LIMIT 3", suite.Service)
+	suite.Require().Equal(http.StatusOK, w.Code)
+	suite.Require().Equal("text/plain", w.Header().Get("Content-Type"))
 	var data []string
 	var headers []string
-	err = parseTextTable(w.Body.String(), &data, &headers)
-	require.NoError(t, err)
+	err := ParseTextTable(w.Body.String(), &data, &headers)
+	suite.Require().NoError(err)
 	var rows []map[string]string
 	for i := 0; i < len(data); i += len(headers) {
 		row := make(map[string]string)
@@ -197,7 +126,7 @@ func TestText_Probabilities(t *testing.T) {
 		}
 		rows = append(rows, row)
 	}
-	require.Len(t, rows, 3)
-	columnNames := getColumnNames(alercedb.Probability{})
-	require.ElementsMatch(t, headers, columnNames)
+	suite.Require().Len(rows, 3)
+	columnNames := GetColumnNames(alercedb.Probability{})
+	suite.Require().ElementsMatch(headers, columnNames)
 }

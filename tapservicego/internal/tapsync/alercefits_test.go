@@ -1,7 +1,6 @@
 package tapsync
 
 import (
-	"ataps/internal/testhelpers"
 	"ataps/pkg/alercedb"
 	"net/http"
 	"net/http/httptest"
@@ -9,237 +8,170 @@ import (
 	"testing"
 
 	"github.com/astrogo/cfitsio"
-	"github.com/stretchr/testify/require"
 )
 
-func TestFits_Object(t *testing.T) {
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	testhelpers.ClearALeRCEDB(db)
-	err = testhelpers.PopulateALeRCEDB(db)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	service := NewTapSyncService()
-	w := sendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM object LIMIT 3", service)
-	require.Equal(t, http.StatusOK, w.Code)
-	require.Equal(t, "application/fits", w.Header().Get("Content-Type"))
-	fname := writeFitsFile(t, w)
+func (suite *AlerceTestSuite) TestFits_Object() {
+	w := SendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM object LIMIT 3", suite.Service)
+	suite.Require().Equal(http.StatusOK, w.Code)
+	suite.Require().Equal("application/fits", w.Header().Get("Content-Type"))
+	fname := writeFitsFile(suite.T(), w)
 	defer os.Remove(fname)
 	f, err := cfitsio.Open(fname, cfitsio.ReadOnly)
-	require.Nil(t, err)
+	suite.Require().Nil(err)
 	defer f.Close()
 	hdu := f.HDU(1)
 	table := hdu.(*cfitsio.Table)
-	require.True(t, table.Type() == cfitsio.BINARY_TBL)
-	require.Equal(t, "results", table.Name())
-	require.Equal(t, 10, table.NumCols())
-	require.Equal(t, int64(3), table.NumRows())
+	suite.Require().True(table.Type() == cfitsio.BINARY_TBL)
+	suite.Require().Equal("results", table.Name())
+	suite.Require().Equal(10, table.NumCols())
+	suite.Require().Equal(int64(3), table.NumRows())
 	rows, err := table.Read(0, table.NumRows())
-	require.Nil(t, err)
+	suite.Require().Nil(err)
 	defer rows.Close()
-	count, parsedData := parseResponseData(t, rows)
-	columnNames := getColumnNames(alercedb.Object{})
-	assertColumnsExist(t, columnNames, parsedData)
-	require.Equal(t, 3, count)
+	count, parsedData := parseResponseData(suite, rows)
+	columnNames := GetColumnNames(alercedb.Object{})
+	assertColumnsExist(suite, columnNames, parsedData)
+	suite.Require().Equal(3, count)
 }
 
-func TestFits_Detection(t *testing.T) {
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	testhelpers.ClearALeRCEDB(db)
-	err = testhelpers.PopulateALeRCEDB(db)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	service := NewTapSyncService()
-	w := sendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM detection LIMIT 3", service)
-	require.Equal(t, http.StatusOK, w.Code)
-	require.Equal(t, "application/fits", w.Header().Get("Content-Type"))
-	fname := writeFitsFile(t, w)
+func (suite *AlerceTestSuite) TestFits_Detection() {
+	w := SendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM detection LIMIT 3", suite.Service)
+	suite.Require().Equal(http.StatusOK, w.Code)
+	suite.Require().Equal("application/fits", w.Header().Get("Content-Type"))
+	fname := writeFitsFile(suite.T(), w)
 	defer os.Remove(fname)
 	f, err := cfitsio.Open(fname, cfitsio.ReadOnly)
-	require.Nil(t, err)
+	suite.Require().Nil(err)
 	defer f.Close()
 	hdu := f.HDU(1)
 	table := hdu.(*cfitsio.Table)
-	require.True(t, table.Type() == cfitsio.BINARY_TBL)
-	require.Equal(t, "results", table.Name())
-	require.Equal(t, 19, table.NumCols())
-	require.Equal(t, int64(3), table.NumRows())
+	suite.Require().True(table.Type() == cfitsio.BINARY_TBL)
+	suite.Require().Equal("results", table.Name())
+	suite.Require().Equal(19, table.NumCols())
+	suite.Require().Equal(int64(3), table.NumRows())
 	rows, err := table.Read(0, table.NumRows())
-	require.Nil(t, err)
+	suite.Require().Nil(err)
 	defer rows.Close()
-	count, parsedData := parseResponseData(t, rows)
-	columnNames := getColumnNames(alercedb.Detection{})
-	assertColumnsExist(t, columnNames, parsedData)
-	require.Equal(t, 3, count)
+	count, parsedData := parseResponseData(suite, rows)
+	columnNames := GetColumnNames(alercedb.Detection{})
+	assertColumnsExist(suite, columnNames, parsedData)
+	suite.Require().Equal(3, count)
 }
 
-func TestFits_NonDetection(t *testing.T) {
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	testhelpers.ClearALeRCEDB(db)
-	err = testhelpers.PopulateALeRCEDB(db)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	service := NewTapSyncService()
-	w := sendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM non_detection LIMIT 3", service)
-	require.Equal(t, http.StatusOK, w.Code)
-	require.Equal(t, "application/fits", w.Header().Get("Content-Type"))
-	fname := writeFitsFile(t, w)
+func (suite *AlerceTestSuite) TestFits_NonDetection() {
+	w := SendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM non_detection LIMIT 3", suite.Service)
+	suite.Require().Equal(http.StatusOK, w.Code)
+	suite.Require().Equal("application/fits", w.Header().Get("Content-Type"))
+	fname := writeFitsFile(suite.T(), w)
 	defer os.Remove(fname)
 	f, err := cfitsio.Open(fname, cfitsio.ReadOnly)
-	require.Nil(t, err)
+	suite.Require().Nil(err)
 	defer f.Close()
 	hdu := f.HDU(1)
 	table := hdu.(*cfitsio.Table)
-	require.True(t, table.Type() == cfitsio.BINARY_TBL)
-	require.Equal(t, "results", table.Name())
-	require.Equal(t, 4, table.NumCols())
-	require.Equal(t, int64(3), table.NumRows())
+	suite.Require().True(table.Type() == cfitsio.BINARY_TBL)
+	suite.Require().Equal("results", table.Name())
+	suite.Require().Equal(4, table.NumCols())
+	suite.Require().Equal(int64(3), table.NumRows())
 	rows, err := table.Read(0, table.NumRows())
-	require.Nil(t, err)
+	suite.Require().Nil(err)
 	defer rows.Close()
-	count, parsedData := parseResponseData(t, rows)
-	columnNames := getColumnNames(alercedb.NonDetection{})
-	assertColumnsExist(t, columnNames, parsedData)
-	require.Equal(t, 3, count)
+	count, parsedData := parseResponseData(suite, rows)
+	columnNames := GetColumnNames(alercedb.NonDetection{})
+	assertColumnsExist(suite, columnNames, parsedData)
+	suite.Require().Equal(3, count)
 }
 
-func TestFits_ForcedPhotometry(t *testing.T) {
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	testhelpers.ClearALeRCEDB(db)
-	err = testhelpers.PopulateALeRCEDB(db)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	service := NewTapSyncService()
-	w := sendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM forced_photometry LIMIT 3", service)
-	require.Equal(t, http.StatusOK, w.Code)
-	require.Equal(t, "application/fits", w.Header().Get("Content-Type"))
-	fname := writeFitsFile(t, w)
+func (suite *AlerceTestSuite) TestFits_ForcedPhotometry() {
+	w := SendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM forced_photometry LIMIT 3", suite.Service)
+	suite.Require().Equal(http.StatusOK, w.Code)
+	suite.Require().Equal("application/fits", w.Header().Get("Content-Type"))
+	fname := writeFitsFile(suite.T(), w)
 	defer os.Remove(fname)
 	f, err := cfitsio.Open(fname, cfitsio.ReadOnly)
-	require.Nil(t, err)
+	suite.Require().Nil(err)
 	defer f.Close()
 	hdu := f.HDU(1)
 	table := hdu.(*cfitsio.Table)
-	require.True(t, table.Type() == cfitsio.BINARY_TBL)
-	require.Equal(t, "results", table.Name())
-	require.Equal(t, 19, table.NumCols())
-	require.Equal(t, int64(3), table.NumRows())
+	suite.Require().True(table.Type() == cfitsio.BINARY_TBL)
+	suite.Require().Equal("results", table.Name())
+	suite.Require().Equal(19, table.NumCols())
+	suite.Require().Equal(int64(3), table.NumRows())
 	rows, err := table.Read(0, table.NumRows())
-	require.Nil(t, err)
+	suite.Require().Nil(err)
 	defer rows.Close()
-	count, parsedData := parseResponseData(t, rows)
-	columnNames := getColumnNames(alercedb.ForcedPhotometry{})
-	assertColumnsExist(t, columnNames, parsedData)
-	require.Equal(t, 3, count)
+	count, parsedData := parseResponseData(suite, rows)
+	columnNames := GetColumnNames(alercedb.ForcedPhotometry{})
+	assertColumnsExist(suite, columnNames, parsedData)
+	suite.Require().Equal(3, count)
 }
 
-func TestFits_Features(t *testing.T) {
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	testhelpers.ClearALeRCEDB(db)
-	err = testhelpers.PopulateALeRCEDB(db)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	service := NewTapSyncService()
-	w := sendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM feature LIMIT 3", service)
-	require.Equal(t, http.StatusOK, w.Code)
-	require.Equal(t, "application/fits", w.Header().Get("Content-Type"))
-	fname := writeFitsFile(t, w)
+func (suite *AlerceTestSuite) TestFits_Features() {
+	w := SendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM feature LIMIT 3", suite.Service)
+	suite.Require().Equal(http.StatusOK, w.Code)
+	suite.Require().Equal("application/fits", w.Header().Get("Content-Type"))
+	fname := writeFitsFile(suite.T(), w)
 	defer os.Remove(fname)
 	f, err := cfitsio.Open(fname, cfitsio.ReadOnly)
-	require.Nil(t, err)
+	suite.Require().Nil(err)
 	defer f.Close()
 	hdu := f.HDU(1)
 	table := hdu.(*cfitsio.Table)
-	require.True(t, table.Type() == cfitsio.BINARY_TBL)
-	require.Equal(t, "results", table.Name())
-	require.Equal(t, 5, table.NumCols())
-	require.Equal(t, int64(3), table.NumRows())
+	suite.Require().True(table.Type() == cfitsio.BINARY_TBL)
+	suite.Require().Equal("results", table.Name())
+	suite.Require().Equal(5, table.NumCols())
+	suite.Require().Equal(int64(3), table.NumRows())
 	rows, err := table.Read(0, table.NumRows())
-	require.Nil(t, err)
+	suite.Require().Nil(err)
 	defer rows.Close()
-	count, parsedData := parseResponseData(t, rows)
-	columnNames := getColumnNames(alercedb.Feature{})
-	assertColumnsExist(t, columnNames, parsedData)
-	require.Equal(t, 3, count)
+	count, parsedData := parseResponseData(suite, rows)
+	columnNames := GetColumnNames(alercedb.Feature{})
+	assertColumnsExist(suite, columnNames, parsedData)
+	suite.Require().Equal(3, count)
 }
 
-func TestFits_Probabilities(t *testing.T) {
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	testhelpers.ClearALeRCEDB(db)
-	err = testhelpers.PopulateALeRCEDB(db)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	service := NewTapSyncService()
-	w := sendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM probability LIMIT 3", service)
-	require.Equal(t, http.StatusOK, w.Code)
-	require.Equal(t, "application/fits", w.Header().Get("Content-Type"))
-	fname := writeFitsFile(t, w)
+func (suite *AlerceTestSuite) TestFits_Probabilities() {
+	w := SendTestQuery("LANG=PSQL&&FORMAT=fits&&QUERY=SELECT * FROM probability LIMIT 3", suite.Service)
+	suite.Require().Equal(http.StatusOK, w.Code)
+	suite.Require().Equal("application/fits", w.Header().Get("Content-Type"))
+	fname := writeFitsFile(suite.T(), w)
 	defer os.Remove(fname)
 	f, err := cfitsio.Open(fname, cfitsio.ReadOnly)
-	require.Nil(t, err)
+	suite.Require().Nil(err)
 	defer f.Close()
 	hdu := f.HDU(1)
 	table := hdu.(*cfitsio.Table)
-	require.True(t, table.Type() == cfitsio.BINARY_TBL)
-	require.Equal(t, "results", table.Name())
-	require.Equal(t, 6, table.NumCols())
-	require.Equal(t, int64(3), table.NumRows())
+	suite.Require().True(table.Type() == cfitsio.BINARY_TBL)
+	suite.Require().Equal("results", table.Name())
+	suite.Require().Equal(6, table.NumCols())
+	suite.Require().Equal(int64(3), table.NumRows())
 	rows, err := table.Read(0, table.NumRows())
-	require.Nil(t, err)
+	suite.Require().Nil(err)
 	defer rows.Close()
-	count, parsedData := parseResponseData(t, rows)
-	columnNames := getColumnNames(alercedb.Probability{})
-	assertColumnsExist(t, columnNames, parsedData)
-	require.Equal(t, 3, count)
+	count, parsedData := parseResponseData(suite, rows)
+	columnNames := GetColumnNames(alercedb.Probability{})
+	assertColumnsExist(suite, columnNames, parsedData)
+	suite.Require().Equal(3, count)
 }
 
-func parseResponseData(t *testing.T, rows *cfitsio.Rows) (int, []map[string]interface{}) {
+func parseResponseData(suite *AlerceTestSuite, rows *cfitsio.Rows) (int, []map[string]interface{}) {
 	parsedData := []map[string]interface{}{}
 	count := 0
 	for rows.Next() {
 		row := map[string]interface{}{}
 		err := rows.Scan(&row)
-		require.Nil(t, err)
+		suite.Require().Nil(err)
 		parsedData = append(parsedData, row)
 		count = count + 1
 	}
 	return count, parsedData
 }
 
-func assertColumnsExist(t *testing.T, columnNames []string, parsedData []map[string]interface{}) {
+func assertColumnsExist(suite *AlerceTestSuite, columnNames []string, parsedData []map[string]interface{}) {
 	for _, data := range parsedData {
 		for _, columnName := range columnNames {
 			_, ok := data[columnName]
-			require.True(t, ok)
+			suite.Require().True(ok)
 		}
 	}
 }
