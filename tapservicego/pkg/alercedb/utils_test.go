@@ -8,13 +8,23 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var ctx context.Context
-var container *postgres.PostgresContainer
+type AlerceSuite struct {
+	suite.Suite
+
+	DB                *sql.DB
+	postgresContainer *postgres.PostgresContainer
+	ctx               context.Context
+}
+
+func TestAlerceSuite(t *testing.T) {
+	suite.Run(t, new(AlerceSuite))
+}
 
 func CreatePostgresContainer(ctx context.Context) (*postgres.PostgresContainer, error) {
 	postgresContainer, err := postgres.RunContainer(ctx,
@@ -63,75 +73,67 @@ func GetDB(url string) (*sql.DB, error) {
 	return db, nil
 }
 
-func initializeLocalDB() {
-	log.Println("Using local database")
+func (suite *AlerceSuite) initializeLocalDB() {
+	suite.T().Log("Using local database")
 	var err error
-	ctx = context.Background()
-	container, err = CreatePostgresContainer(ctx)
+	suite.ctx = context.Background()
+	suite.postgresContainer, err = CreatePostgresContainer(suite.ctx)
 	if err != nil {
-		log.Fatal(err)
+		suite.T().Fatal(err)
 	}
 	var connStr string
-	connStr, err = container.ConnectionString(ctx)
+	connStr, err = suite.postgresContainer.ConnectionString(suite.ctx)
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+	os.Setenv("DATABASE_URL", connStr)
+	suite.DB, err = GetDB(connStr)
 	if err != nil {
 		log.Fatal(err)
 	}
-	os.Setenv("DATABASE_URL", connStr)
 }
 
-func initializeDaggerDB() {
-	log.Println("Using Dagger database")
-	os.Setenv("DATABASE_URL", "host=db user=testuser password=testpassword port=5432")
+func (suite *AlerceSuite) initializeDaggerDB() {
+	suite.T().Log("Using Dagger database")
+	connUrl := "host=db user=testuser password=testpassword port=5432"
+	os.Setenv("DATABASE_URL", connUrl)
+	tmpDb, err := GetDB(connUrl)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = tmpDb.Exec("CREATE DATABASE alercedb")
+	if err != nil {
+		log.Fatal(err)
+	}
+	tmpDb.Close()
+	connUrl = connUrl + " dbname=alercedb"
+	os.Setenv("DATABASE_URL", connUrl)
+	suite.DB, err = GetDB(connUrl)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
-func globalSetup() {
+func (suite *AlerceSuite) SetupSuite() {
 	if os.Getenv("ENV") == "DEV" || os.Getenv("ENV") == "" {
-		initializeLocalDB()
+		suite.initializeLocalDB()
 	} else if os.Getenv("ENV") == "CI" {
-		initializeDaggerDB()
+		suite.initializeDaggerDB()
 	} else {
 		log.Fatal("Unknown environment")
 	}
-	setUpTestDatabase()
 }
 
-func setUpTestDatabase() {
+func (suite *AlerceSuite) TearDownSuite() {
 	if os.Getenv("ENV") == "DEV" || os.Getenv("ENV") == "" {
-		return
+		CleanUpContainer(suite.ctx, suite.postgresContainer)
 	}
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	_, err = db.Exec("CREATE DATABASE alercedb")
-	if err != nil {
-		log.Fatal(err)
-	}
-	os.Setenv("DATABASE_URL", os.Getenv("DATABASE_URL")+" dbname=alercedb")
+	suite.DB.Close()
 }
 
-func globalTeardown() {
-	if os.Getenv("ENV") == "DEV" || os.Getenv("ENV") == "" {
-		CleanUpContainer(ctx, container)
-	}
-}
-
-func TestMain(m *testing.M) {
-	globalSetup()
-	code := m.Run()
-	globalTeardown()
-	os.Exit(code)
-}
-
-func restoreDatabase() {
-	db, err := GetDB(os.Getenv("DATABASE_URL"))
+func RestoreDatabase(db *sql.DB, suite *AlerceSuite) {
+	err := DropTables(db)
 	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	err = DropTables(db)
-	if err != nil {
-		log.Fatal(err)
+		suite.T().Fatal(err)
 	}
 }

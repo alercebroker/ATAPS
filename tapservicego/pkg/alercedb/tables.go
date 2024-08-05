@@ -3,31 +3,38 @@ package alercedb
 import (
 	"database/sql"
 	"fmt"
+	"log"
 )
 
 func CreateTables(db *sql.DB) error {
 	err := createObjectTable(db)
 	if err != nil {
+		log.Println("Error creating object table")
 		return err
 	}
 	err = createDetectionsTable(db)
 	if err != nil {
+		log.Println("Error creating detections table")
 		return err
 	}
 	err = createNonDetectionsTable(db)
 	if err != nil {
+		log.Println("Error creating non detections table")
 		return err
 	}
 	err = createForcedPhotometryTable(db)
 	if err != nil {
+		log.Println("Error creating forced photometry table")
 		return err
 	}
 	err = createFeaturesTable(db)
 	if err != nil {
+		log.Println("Error creating features table")
 		return err
 	}
 	err = createProbabilitiesTable(db)
 	if err != nil {
+		log.Println("Error creating probabilities table")
 		return err
 	}
 	return nil

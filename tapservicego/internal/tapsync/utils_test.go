@@ -10,7 +10,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-func sendTestQuery(query string, service *TapSyncService) *httptest.ResponseRecorder {
+func SendTestQuery(query string, service *TapSyncService) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest(
 		"POST",
@@ -22,7 +22,7 @@ func sendTestQuery(query string, service *TapSyncService) *httptest.ResponseReco
 	return w
 }
 
-func getColumnNames(v interface{}) []string {
+func GetColumnNames(v interface{}) []string {
 	t := reflect.TypeOf(v)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
@@ -44,7 +44,7 @@ func getColumnNames(v interface{}) []string {
 	return fieldNames
 }
 
-func parseHTMLTable(doc *html.Node, data *[]string, tag string) {
+func ParseHTMLTable(doc *html.Node, data *[]string, tag string) {
 	var traverse func(n *html.Node, tag string) *html.Node
 	traverse = func(n *html.Node, tag string) *html.Node {
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
@@ -61,7 +61,7 @@ func parseHTMLTable(doc *html.Node, data *[]string, tag string) {
 	traverse(doc, tag)
 }
 
-func parseTextTable(doc string, data *[]string, headers *[]string) error {
+func ParseTextTable(doc string, data *[]string, headers *[]string) error {
 	scanner := bufio.NewScanner(strings.NewReader(doc))
 	isHeader := false
 	for scanner.Scan() {
