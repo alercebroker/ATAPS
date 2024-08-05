@@ -55,25 +55,37 @@ func (m *Tapservicego) Test(ctx context.Context, source *Directory) (string, err
 // Build the tap service
 func (m *Tapservicego) Build(ctx context.Context, source *Directory) *Container {
 	return dag.Container().
-		From("golang:1.22").
+		From("golang:1.22.3-bookworm").
+		WithExec([]string{"apt-get", "update"}).
+		WithExec([]string{"apt-get", "install", "libcfitsio-dev", "--yes"}).
 		WithFile("/bin/ataps", m.BuildEnv(ctx, source).File("/usr/local/bin/ataps")).
 		WithExposedPort(8080).
 		WithEntrypoint([]string{"ataps"})
 }
 
 // Run the tap service
-func (m *Tapservicego) Run(ctx context.Context, source *Directory, db *Service) *Container {
+func (m *Tapservicego) Run(
+	ctx context.Context,
+	source *Directory,
+	db *Service,
+	username string,
+	password string,
+	dbname *string,
+) *Container {
 	container := m.Build(ctx, source)
+	if dbname == nil {
+		dbname = &username
+	}
 	if db == nil {
 		log.Println("No database URL provided, launching a new postgres container.")
 		dbCtr := dag.
 			Container().
 			From("index.docker.io/postgres").
-			WithEnvVariable("POSTGRES_USER", "postgres").
-			WithEnvVariable("POSTGRES_PASSWORD", "postgres").
+			WithEnvVariable("POSTGRES_USER", username).
+			WithEnvVariable("POSTGRES_PASSWORD", password).
 			AsService()
 		container = container.WithServiceBinding("db", dbCtr).
-			WithEnvVariable("DATABASE_URL", "postgres://postgres:postgres@db:5432/postgres")
+			WithEnvVariable("DATABASE_URL", "postgres://"+username+":"+password+"@db:5432/"+*dbname)
 	} else {
 		endpoint, err := db.Endpoint(ctx)
 		if err != nil {
@@ -83,7 +95,7 @@ func (m *Tapservicego) Run(ctx context.Context, source *Directory, db *Service) 
 		port := strings.Split(endpoint, ":")[1]
 		container = container.
 			WithServiceBinding("db", db).
-			WithEnvVariable("DATABASE_URL", "postgres://postgres:postgres@"+host+":"+port+"/postgres")
+			WithEnvVariable("DATABASE_URL", "postgres://"+username+":"+password+"@"+host+":"+port+"/"+*dbname)
 	}
 	return container.WithExec([]string{"ataps"})
 }
