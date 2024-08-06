@@ -28,7 +28,7 @@ func (suite *AlerceTestSuite) SetupSuite() {
 	} else {
 		suite.T().Fatal("Unknown environment")
 	}
-	suite.Service = NewTapSyncService()
+	suite.Service = NewTapSyncService(NewConfig(WithDatabaseURL(suite.connUrl)))
 }
 
 func (suite *AlerceTestSuite) TearDownSuite() {
@@ -71,7 +71,6 @@ func (suite *AlerceTestSuite) InitializeLocalDB() {
 		suite.T().Fatal(err)
 	}
 	suite.connUrl = connStr
-	os.Setenv("DATABASE_URL", connStr)
 	db, err := GetDB(connStr)
 	if err != nil {
 		suite.T().Log("Could not connect")
@@ -98,7 +97,6 @@ func (suite *AlerceTestSuite) InitializeDaggerDB() {
 	// connect to alerce database
 	connUrl = connUrl + " dbname=alerce"
 	suite.connUrl = connUrl
-	os.Setenv("DATABASE_URL", connUrl)
 	db, err = GetDB(connUrl)
 	if err != nil {
 		suite.T().Log("Could not connect")
