@@ -178,8 +178,7 @@ type TapSyncService struct {
 	config *Config
 }
 
-func NewTapSyncService() *TapSyncService {
-	config := GetConfig()
+func NewTapSyncService(config *Config) *TapSyncService {
 	db, err := GetDB(config.DatabaseURL)
 	if err != nil {
 		panic(err)

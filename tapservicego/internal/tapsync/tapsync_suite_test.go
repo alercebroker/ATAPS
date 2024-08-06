@@ -14,7 +14,7 @@ import (
 type TapSyncTestSuite struct {
 	suite.Suite
 	DB            *sql.DB
-	connUrl       string
+	ConnUrl       string
 	PsqlContainer *postgres.PostgresContainer
 	ctx           context.Context
 	Service       *TapSyncService
@@ -28,7 +28,7 @@ func (suite *TapSyncTestSuite) SetupSuite() {
 	} else {
 		suite.T().Fatal("Unknown environment")
 	}
-	suite.Service = NewTapSyncService()
+	suite.Service = NewTapSyncService(NewConfig(WithDatabaseURL(suite.ConnUrl)))
 }
 
 func (suite *TapSyncTestSuite) TearDownSuite() {
@@ -36,12 +36,6 @@ func (suite *TapSyncTestSuite) TearDownSuite() {
 		testhelpers.CleanUpContainer(suite.ctx, suite.PsqlContainer)
 	}
 	suite.DB.Close()
-}
-
-func (suite *TapSyncTestSuite) SetupTest() {
-}
-
-func (suite *TapSyncTestSuite) TearDownTest() {
 }
 
 func TestTapSyncTestSuite(t *testing.T) {
@@ -61,14 +55,13 @@ func (suite *TapSyncTestSuite) InitializeLocalDB() {
 	if err != nil {
 		suite.T().Fatal(err)
 	}
-	suite.connUrl = connStr
-	os.Setenv("DATABASE_URL", connStr)
 	db, err := GetDB(connStr)
 	if err != nil {
 		suite.T().Log("Could not connect")
 		suite.T().Fatal(err)
 	}
 	suite.DB = db
+	suite.ConnUrl = connStr
 }
 
 func (suite *TapSyncTestSuite) InitializeDaggerDB() {
@@ -88,12 +81,11 @@ func (suite *TapSyncTestSuite) InitializeDaggerDB() {
 	db.Close()
 	// connect to tapsync database
 	connUrl = connUrl + " dbname=tapsync"
-	suite.connUrl = connUrl
-	os.Setenv("DATABASE_URL", connUrl)
 	db, err = GetDB(connUrl)
 	if err != nil {
 		suite.T().Log("Could not connect")
 		suite.T().Fatal(err)
 	}
 	suite.DB = db
+	suite.ConnUrl = connUrl
 }

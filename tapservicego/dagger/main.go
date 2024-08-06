@@ -34,7 +34,7 @@ func (m *Tapservicego) BuildEnv(ctx context.Context, source *Directory) *Contain
 		WithExec([]string{"go", "mod", "download"}).
 		WithExec([]string{"go", "mod", "verify"}).
 		WithDirectory("/usr/src/app", source).
-		WithExec([]string{"go", "build", "-o", "/usr/local/bin/ataps", "."})
+		WithExec([]string{"go", "build", "-o", "/usr/local/bin/ataps", "cmd/tapservice/main.go"})
 }
 
 // Tests the go package
@@ -53,13 +53,13 @@ func (m *Tapservicego) Test(ctx context.Context, source *Directory) (string, err
 }
 
 // Build the tap service
-func (m *Tapservicego) Build(ctx context.Context, source *Directory) *Container {
+func (m *Tapservicego) Build(ctx context.Context, source *Directory, port int) *Container {
 	return dag.Container().
 		From("golang:1.22.3-bookworm").
 		WithExec([]string{"apt-get", "update"}).
 		WithExec([]string{"apt-get", "install", "libcfitsio-dev", "--yes"}).
 		WithFile("/bin/ataps", m.BuildEnv(ctx, source).File("/usr/local/bin/ataps")).
-		WithExposedPort(8080).
+		WithExposedPort(port).
 		WithEntrypoint([]string{"ataps"})
 }
 
@@ -71,8 +71,13 @@ func (m *Tapservicego) Run(
 	username string,
 	password string,
 	dbname *string,
+	port *int,
 ) *Container {
-	container := m.Build(ctx, source)
+	portOverride := 8080
+	if port == nil {
+		port = &portOverride
+	}
+	container := m.Build(ctx, source, *port)
 	if dbname == nil {
 		dbname = &username
 	}
