@@ -19,7 +19,7 @@ func (suite *AlerceTestSuite) TestHtml_Object() {
 	ParseHTMLTable(doc, &data, "td")
 	var rows []map[string]string
 	for i := 0; i < len(data); i += len(headers) {
-		row := make(map[string]string)
+		row := make(map[string]string, len(headers))
 		for j, header := range headers {
 			row[header] = data[i+j]
 		}
@@ -47,7 +47,7 @@ func (suite *AlerceTestSuite) TestHtml_Detection() {
 	ParseHTMLTable(doc, &data, "td")
 	var rows []map[string]string
 	for i := 0; i < len(data); i += len(headers) {
-		row := make(map[string]string)
+		row := make(map[string]string, len(headers))
 		for j, header := range headers {
 			row[header] = data[i+j]
 		}
@@ -70,7 +70,7 @@ func (suite *AlerceTestSuite) TestHtml_NonDetection() {
 	ParseHTMLTable(doc, &data, "td")
 	var rows []map[string]string
 	for i := 0; i < len(data); i += len(headers) {
-		row := make(map[string]string)
+		row := make(map[string]string, len(headers))
 		for j, header := range headers {
 			row[header] = data[i+j]
 		}
@@ -93,7 +93,7 @@ func (suite *AlerceTestSuite) TestHtml_ForcedPhotometry() {
 	ParseHTMLTable(doc, &data, "td")
 	var rows []map[string]string
 	for i := 0; i < len(data); i += len(headers) {
-		row := make(map[string]string)
+		row := make(map[string]string, len(headers))
 		for j, header := range headers {
 			row[header] = data[i+j]
 		}
@@ -116,7 +116,7 @@ func (suite *AlerceTestSuite) TestHtml_Features() {
 	ParseHTMLTable(doc, &data, "td")
 	var rows []map[string]string
 	for i := 0; i < len(data); i += len(headers) {
-		row := make(map[string]string)
+		row := make(map[string]string, len(headers))
 		for j, header := range headers {
 			row[header] = data[i+j]
 		}
@@ -139,7 +139,7 @@ func (suite *AlerceTestSuite) TestHtml_Probabilities() {
 	ParseHTMLTable(doc, &data, "td")
 	var rows []map[string]string
 	for i := 0; i < len(data); i += len(headers) {
-		row := make(map[string]string)
+		row := make(map[string]string, len(headers))
 		for j, header := range headers {
 			row[header] = data[i+j]
 		}

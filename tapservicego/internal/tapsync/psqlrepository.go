@@ -71,7 +71,7 @@ func HandleSQLQuery(query string, db *sql.DB) ([]map[string]interface{}, error) 
 			return nil, err
 		}
 		// Create a map to hold the row data
-		rowMap := make(map[string]interface{})
+		rowMap := make(map[string]interface{}, len(columns))
 		// Iterate over the columns and add the data to the map
 		for i, colName := range columns {
 			val := values[i]

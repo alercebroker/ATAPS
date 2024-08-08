@@ -15,7 +15,7 @@ func (suite *AlerceTestSuite) TestText_Object() {
 	suite.Require().NoError(err)
 	var rows []map[string]string
 	for i := 0; i < len(data); i += len(headers) {
-		row := make(map[string]string)
+		row := make(map[string]string, len(headers))
 		for j, header := range headers {
 			row[header] = data[i+j]
 		}
@@ -36,7 +36,7 @@ func (suite *AlerceTestSuite) TestText_Detection() {
 	suite.Require().NoError(err)
 	var rows []map[string]string
 	for i := 0; i < len(data); i += len(headers) {
-		row := make(map[string]string)
+		row := make(map[string]string, len(headers))
 		for j, header := range headers {
 			row[header] = data[i+j]
 		}
@@ -57,7 +57,7 @@ func (suite *AlerceTestSuite) TestText_NonDetection() {
 	suite.Require().NoError(err)
 	var rows []map[string]string
 	for i := 0; i < len(data); i += len(headers) {
-		row := make(map[string]string)
+		row := make(map[string]string, len(headers))
 		for j, header := range headers {
 			row[header] = data[i+j]
 		}
@@ -78,7 +78,7 @@ func (suite *AlerceTestSuite) TestText_ForcedPhotometry() {
 	suite.Require().NoError(err)
 	var rows []map[string]string
 	for i := 0; i < len(data); i += len(headers) {
-		row := make(map[string]string)
+		row := make(map[string]string, len(headers))
 		for j, header := range headers {
 			row[header] = data[i+j]
 		}
@@ -99,7 +99,7 @@ func (suite *AlerceTestSuite) TestText_Features() {
 	suite.Require().NoError(err)
 	var rows []map[string]string
 	for i := 0; i < len(data); i += len(headers) {
-		row := make(map[string]string)
+		row := make(map[string]string, len(headers))
 		for j, header := range headers {
 			row[header] = data[i+j]
 		}
@@ -120,7 +120,7 @@ func (suite *AlerceTestSuite) TestText_Probabilities() {
 	suite.Require().NoError(err)
 	var rows []map[string]string
 	for i := 0; i < len(data); i += len(headers) {
-		row := make(map[string]string)
+		row := make(map[string]string, len(headers))
 		for j, header := range headers {
 			row[header] = data[i+j]
 		}
