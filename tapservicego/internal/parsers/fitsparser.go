@@ -130,7 +130,7 @@ func getFormat(value interface{}) string {
 func cleanData(data []map[string]interface{}, columns []cfitsio.Column) []map[string]interface{} {
 	cleanedData := make([]map[string]interface{}, len(data))
 	for i := 0; i < len(data); i++ {
-		cleanedData[i] = make(map[string]interface{})
+		cleanedData[i] = make(map[string]interface{}, len(columns))
 	}
 	keys := make([]string, 0, len(data[0]))
 	for key := range data[0] {
