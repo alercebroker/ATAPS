@@ -16,7 +16,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"math"
+	"math/rand/v2"
 	"strings"
 )
 
@@ -61,6 +64,77 @@ func (m *Tapservicego) Build(ctx context.Context, source *Directory, port int) *
 		WithFile("/bin/ataps", m.BuildEnv(ctx, source).File("/usr/local/bin/ataps")).
 		WithExposedPort(port).
 		WithEntrypoint([]string{"ataps"})
+}
+
+// Publish the tap service container image
+func (m *Tapservicego) PublishContainer(
+	ctx context.Context,
+	source *Directory,
+	username *string,
+	password *Secret,
+	tags *string,
+) ([]string, error) {
+	container := m.Build(ctx, source, 8080)
+	if username == nil && password == nil {
+		address, err := container.Publish(ctx, fmt.Sprintf("ttl.sh/tapservice-%.0f:2h", math.Floor(rand.Float64()*10000000)))
+		if err != nil {
+			return nil, err
+		}
+		return []string{address}, nil
+	} else {
+		tagList := make([]string, 0)
+		if tags == nil {
+			tagList = append(tagList, "latest")
+		}
+		splitTags := strings.Split(*tags, ",")
+		for _, tag := range splitTags {
+			tagList = append(tagList, tag)
+		}
+		ctr := container.
+			WithRegistryAuth("ghcr.io", *username, password)
+		addresses := make([]string, len(tagList))
+		for i, tag := range tagList {
+			address, err := ctr.Publish(ctx, fmt.Sprintf("ghcr.io/%s/tapservice:%s", *username, tag))
+			if err != nil {
+				return nil, err
+			}
+			addresses[i] = address
+		}
+		return addresses, nil
+	}
+}
+
+// Publish the tap service Helm chart to GHCR
+func (m *Tapservicego) PublishHelmChart(
+	ctx context.Context,
+	chartDir *Directory,
+	username string,
+	password *Secret,
+	ghOrg *string,
+) (string, error) {
+	container := dag.Container().
+		From("alpine/k8s:1.31.0").
+		WithDirectory("/usr/src/chart", chartDir).
+		WithExec([]string{"helm", "package", "/usr/src/chart", "-d", "/usr/src"})
+	version, err := container.
+		WithExec([]string{"sh", "-c", "grep '^version:' /usr/src/chart/Chart.yaml | awk '{print $2}' | tr -d '\"'"}).
+		Stdout(ctx)
+	version = strings.Trim(version, "\n")
+	if err != nil {
+		log.Fatalf("Error getting chart version: %v", err)
+	}
+	pwd, err := password.Plaintext(ctx)
+	if err != nil {
+		log.Fatalf("Error getting password: %v", err)
+	}
+	if ghOrg == nil {
+		ghOrg = &username
+	}
+	registry := fmt.Sprintf("oci://ghcr.io/%s/tapservice-chart", *ghOrg)
+	return container.
+		WithExec([]string{"helm", "registry", "login", "-u", username, "-p", pwd, "ghcr.io"}).
+		WithExec([]string{"helm", "push", fmt.Sprintf("/usr/src/tapservice-%s.tgz", version), registry}).
+		Stdout(ctx)
 }
 
 // Run the tap service

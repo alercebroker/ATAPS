@@ -1,29 +1,29 @@
 ---
 name: Test
 on:
-  pull_request:
+  push:
     branches: [main]
 
 jobs:
-  test:
-    name: test
+  publish:
+    name: publish
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       -
-        name: Call Dagger Build Function
+        name: Call Dagger Publish Function
         uses: dagger/dagger-for-github@v5
         with:
           version: "latest"
           verb: call
-          args: build --rootDir=..
+          args: publish-images --rootDir=.. --username=${{github.actor}} --password=${{secrets.GITHUB_TOKEN}} --tags=rc
           workdir: ./ci
       -
-        name: Call Dagger Test Function
+        name: Call Dagger Publish Helm Charts Function
         uses: dagger/dagger-for-github@v5
         with:
           version: "latest"
           verb: call
-          args: test --rootDir=..
+          args: publish-helm-charts --rootDir=.. --username=${{github.actor}} --password=${{github.token}}
           workdir: ./ci
