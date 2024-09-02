@@ -16,137 +16,27 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"dagger/tapservicego/internal/dagger"
 	"log"
-	"math"
-	"math/rand/v2"
 	"strings"
 )
 
-type Tapservicego struct{}
-
-// Builds the go package
-func (m *Tapservicego) BuildEnv(ctx context.Context, source *Directory) *Container {
-	return dag.Container().
-		From("golang:1.22.3-bookworm").
-		WithExec([]string{"apt-get", "update"}).
-		WithExec([]string{"apt-get", "install", "libcfitsio-dev", "--yes"}).
-		WithWorkdir("/usr/src/app").
-		WithFile("go.mod", source.File("go.mod")).
-		WithFile("go.sum", source.File("go.sum")).
-		WithExec([]string{"go", "mod", "download"}).
-		WithExec([]string{"go", "mod", "verify"}).
-		WithDirectory("/usr/src/app", source).
-		WithExec([]string{"go", "build", "-o", "/usr/local/bin/ataps", "cmd/tapservice/main.go"})
+type Tapservicego struct {
+	HelmValuesSource *string
+	ChartUrl         string
+	DryRun           bool
 }
 
-// Tests the go package
-func (m *Tapservicego) Test(ctx context.Context, source *Directory) (string, error) {
-	db := dag.
-		Container().
-		From("docker.io/postgres:16-alpine").
-		WithEnvVariable("POSTGRES_USER", "testuser").
-		WithEnvVariable("POSTGRES_PASSWORD", "testpassword").
-		AsService()
-	return m.BuildEnv(ctx, source).
-		WithEnvVariable("ENV", "CI").
-		WithServiceBinding("db", db).
-		WithExec([]string{"go", "test", "-failfast", "./..."}).
-		Stdout(ctx)
-}
-
-// Build the tap service
-func (m *Tapservicego) Build(ctx context.Context, source *Directory, port int) *Container {
-	return dag.Container().
-		From("golang:1.22.3-bookworm").
-		WithExec([]string{"apt-get", "update"}).
-		WithExec([]string{"apt-get", "install", "libcfitsio-dev", "--yes"}).
-		WithFile("/bin/ataps", m.BuildEnv(ctx, source).File("/usr/local/bin/ataps")).
-		WithExposedPort(port).
-		WithEntrypoint([]string{"ataps"})
-}
-
-// Publish the tap service container image
-func (m *Tapservicego) PublishContainer(
-	ctx context.Context,
-	source *Directory,
-	username *string,
-	password *Secret,
-	tags *string,
-) ([]string, error) {
-	container := m.Build(ctx, source, 8080)
-	if username == nil && password == nil {
-		address, err := container.Publish(ctx, fmt.Sprintf("ttl.sh/tapservice-%.0f:2h", math.Floor(rand.Float64()*10000000)))
-		if err != nil {
-			return nil, err
-		}
-		return []string{address}, nil
-	} else {
-		tagList := make([]string, 0)
-		if tags == nil {
-			tagList = append(tagList, "latest")
-		}
-		splitTags := strings.Split(*tags, ",")
-		for _, tag := range splitTags {
-			tagList = append(tagList, tag)
-		}
-		ctr := container.
-			WithRegistryAuth("ghcr.io", *username, password)
-		addresses := make([]string, len(tagList))
-		for i, tag := range tagList {
-			address, err := ctr.Publish(ctx, fmt.Sprintf("ghcr.io/%s/tapservice:%s", *username, tag))
-			if err != nil {
-				return nil, err
-			}
-			addresses[i] = address
-		}
-		return addresses, nil
-	}
-}
-
-// Publish the tap service Helm chart to GHCR
-func (m *Tapservicego) PublishHelmChart(
-	ctx context.Context,
-	chartDir *Directory,
-	username string,
-	password *Secret,
-	ghOrg *string,
-) (string, error) {
-	container := dag.Container().
-		From("alpine/k8s:1.31.0").
-		WithDirectory("/usr/src/chart", chartDir).
-		WithExec([]string{"helm", "package", "/usr/src/chart", "-d", "/usr/src"})
-	version, err := container.
-		WithExec([]string{"sh", "-c", "grep '^version:' /usr/src/chart/Chart.yaml | awk '{print $2}' | tr -d '\"'"}).
-		Stdout(ctx)
-	version = strings.Trim(version, "\n")
-	if err != nil {
-		log.Fatalf("Error getting chart version: %v", err)
-	}
-	pwd, err := password.Plaintext(ctx)
-	if err != nil {
-		log.Fatalf("Error getting password: %v", err)
-	}
-	if ghOrg == nil {
-		ghOrg = &username
-	}
-	registry := fmt.Sprintf("oci://ghcr.io/%s/tapservice-chart", *ghOrg)
-	return container.
-		WithExec([]string{"helm", "registry", "login", "-u", username, "-p", pwd, "ghcr.io"}).
-		WithExec([]string{"helm", "push", fmt.Sprintf("/usr/src/tapservice-%s.tgz", version), registry}).
-		Stdout(ctx)
-}
-
-// Run the tap service
+// Run the tap service locally
 func (m *Tapservicego) Run(
 	ctx context.Context,
-	source *Directory,
-	db *Service,
+	source *dagger.Directory,
+	db *dagger.Service,
 	username string,
 	password string,
 	dbname *string,
 	port *int,
-) *Container {
+) *dagger.Container {
 	portOverride := 8080
 	if port == nil {
 		port = &portOverride

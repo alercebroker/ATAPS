@@ -10,9 +10,15 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
-imagePullSecrets: []
+imagePullSecrets:
+  - name: image-pull-access
 nameOverride: ""
 fullnameOverride: ""
+
+imageCredentials:
+  password: ${ghcr_password}
+  registry: ghcr.io
+  username: ${ghcr_username}
 
 podAnnotations: {}
 podLabels: {}

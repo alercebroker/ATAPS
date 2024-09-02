@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 )
 
 type Ci struct{}
@@ -46,6 +47,34 @@ func (m *Ci) PublishHelmCharts(
 	}
 	result += output + "\n"
 	return result, nil
+}
+
+// Deploy Helm Charts
+func (m *Ci) DeployHelmCharts(
+	ctx context.Context,
+	username string,
+	password *Secret,
+	helmValues *string,
+	version string,
+	dryRun bool,
+) (string, error) {
+	var result string
+	container := m.deployTapService(username, password, helmValues, version, dryRun)
+	output, err := container.Stdout(ctx)
+	if err != nil {
+		return "", err
+	}
+	result += output + "\n"
+	return result, nil
+}
+
+func (m *Ci) deployTapService(username string, password *Secret, helmValues *string, version string, dryRun bool) *Container {
+	opts := TapservicegoDeployOpts{
+		HelmValues: *helmValues,
+	}
+	url := "ghcr.io/%s/tapservice-chart/tapservice:%s"
+	url = fmt.Sprintf(url, username, version)
+	return dag.Tapservicego().Deploy(username, password, url, dryRun, opts)
 }
 
 func (m *Ci) publishTapservice(

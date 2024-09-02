@@ -25,3 +25,6 @@ ataps
 
 # Helm chart values file
 values-override.yaml
+
+# Local environment variables file
+.env
