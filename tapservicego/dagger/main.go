@@ -16,63 +16,27 @@ package main
 
 import (
 	"context"
+	"dagger/tapservicego/internal/dagger"
 	"log"
 	"strings"
 )
 
-type Tapservicego struct{}
-
-// Builds the go package
-func (m *Tapservicego) BuildEnv(ctx context.Context, source *Directory) *Container {
-	return dag.Container().
-		From("golang:1.22.3-bookworm").
-		WithExec([]string{"apt-get", "update"}).
-		WithExec([]string{"apt-get", "install", "libcfitsio-dev", "--yes"}).
-		WithWorkdir("/usr/src/app").
-		WithFile("go.mod", source.File("go.mod")).
-		WithFile("go.sum", source.File("go.sum")).
-		WithExec([]string{"go", "mod", "download"}).
-		WithExec([]string{"go", "mod", "verify"}).
-		WithDirectory("/usr/src/app", source).
-		WithExec([]string{"go", "build", "-o", "/usr/local/bin/ataps", "cmd/tapservice/main.go"})
+type Tapservicego struct {
+	HelmValuesSource *string
+	ChartUrl         string
+	DryRun           bool
 }
 
-// Tests the go package
-func (m *Tapservicego) Test(ctx context.Context, source *Directory) (string, error) {
-	db := dag.
-		Container().
-		From("docker.io/postgres:16-alpine").
-		WithEnvVariable("POSTGRES_USER", "testuser").
-		WithEnvVariable("POSTGRES_PASSWORD", "testpassword").
-		AsService()
-	return m.BuildEnv(ctx, source).
-		WithEnvVariable("ENV", "CI").
-		WithServiceBinding("db", db).
-		WithExec([]string{"go", "test", "-failfast", "./..."}).
-		Stdout(ctx)
-}
-
-// Build the tap service
-func (m *Tapservicego) Build(ctx context.Context, source *Directory, port int) *Container {
-	return dag.Container().
-		From("golang:1.22.3-bookworm").
-		WithExec([]string{"apt-get", "update"}).
-		WithExec([]string{"apt-get", "install", "libcfitsio-dev", "--yes"}).
-		WithFile("/bin/ataps", m.BuildEnv(ctx, source).File("/usr/local/bin/ataps")).
-		WithExposedPort(port).
-		WithEntrypoint([]string{"ataps"})
-}
-
-// Run the tap service
+// Run the tap service locally
 func (m *Tapservicego) Run(
 	ctx context.Context,
-	source *Directory,
-	db *Service,
+	source *dagger.Directory,
+	db *dagger.Service,
 	username string,
 	password string,
 	dbname *string,
 	port *int,
-) *Container {
+) *dagger.Container {
 	portOverride := 8080
 	if port == nil {
 		port = &portOverride
