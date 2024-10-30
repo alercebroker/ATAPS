@@ -17,8 +17,6 @@ jobs:
       -
         name: Call Dagger Publish Function
         uses: dagger/dagger-for-github@v5
-        env:  
-          GITHUB_TOKEN: ${{ secrets.TAP_TOKEN }}
         with:
           version: "latest"
           verb: call
