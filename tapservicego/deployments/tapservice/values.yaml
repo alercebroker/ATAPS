@@ -39,19 +39,19 @@ service:
   port: 80
 
 ingress:
-  enabled: false
+  enabled: true
   className: "alb"
   annotations:
     alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/tags: 
+    alb.ingress.kubernetes.io/tags: ""
     alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/certificate-arn:
-    alb.ingress.kubernetes.io/group.name: 
+    alb.ingress.kubernetes.io/certificate-arn: ""
+    alb.ingress.kubernetes.io/group.name: ""
   hosts:
     # Host should be the CNAME in Route53 that points to the ALB
-    - host: 
+    - host: api.staging.alerce.online
       paths:
-        - path: /
+        - path: ""
           pathType: Prefix
   tls: []
   #  - secretName: chart-example-tls
@@ -104,5 +104,3 @@ affinity: {}
 secret:
   name: "container-secrets"
   databaseUrl: ""
-
-namespace: ""
