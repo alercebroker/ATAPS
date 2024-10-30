@@ -43,10 +43,10 @@ ingress:
   className: "alb"
   annotations:
     alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/tags: {{ .Values.ingress.k8sTags }}
+    alb.ingress.kubernetes.io/tags: Environment=staging
     alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/certificate-arn: {{ .Values.ingress.certificateArn }}
-    alb.ingress.kubernetes.io/group.name: {{ .Values.ingress.k8sGroupName }}
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:113113085296:certificate/6e3c9ebd-259b-4fb4-ad9a-72491dbeb70f
+    alb.ingress.kubernetes.io/group.name: web-services-staging
   hosts:
     # Host should be the CNAME in Route53 that points to the ALB
     - host: api.staging.alerce.online
