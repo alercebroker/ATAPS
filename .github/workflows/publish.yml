@@ -25,5 +25,5 @@ jobs:
         with:
           version: "latest"
           verb: call
-          args: publish-helm-charts --rootDir=.. --username=${{github.actor}} --password=${{secrets.TAP_TOKEN}}
+          args: publish-helm-charts --rootDir=.. --username=${{github.actor}} --password=${{github.token}}
           workdir: ./ci

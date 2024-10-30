@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: "ghcr.io/alercebroker/lightcurve"
+  repository: ""
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
@@ -51,7 +51,7 @@ ingress:
     # Host should be the CNAME in Route53 that points to the ALB
     - host: api.staging.alerce.online
       paths:
-        - path: /
+        - path: ""
           pathType: Prefix
   tls: []
   #  - secretName: chart-example-tls
@@ -104,5 +104,3 @@ affinity: {}
 secret:
   name: "container-secrets"
   databaseUrl: ""
-
-namespace: ""
