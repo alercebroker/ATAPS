@@ -34,3 +34,4 @@ jobs:
           verb: call
           args: publish-helm-charts --rootDir=.. --username=${{github.actor}} --password=${{secrets.GITHUB_TOKEN}}
           workdir: ./ci
+          
