@@ -1,9 +1,12 @@
----
 name: Publish
 on:
   push:
     branches: [aws/test]
 
+permissions:
+  contents: read
+  packages: write
+  
 jobs:
   publish:
     name: publish
@@ -14,6 +17,8 @@ jobs:
       -
         name: Call Dagger Publish Function
         uses: dagger/dagger-for-github@v5
+        env:  
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           version: "latest"
           verb: call
@@ -22,6 +27,8 @@ jobs:
       -
         name: Call Dagger Publish Helm Charts Function
         uses: dagger/dagger-for-github@v5
+        env:  
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           version: "latest"
           verb: call
