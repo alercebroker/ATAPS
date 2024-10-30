@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: ""
+  repository: "ghcr.io/alercebroker/lightcurve"
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
@@ -43,10 +43,10 @@ ingress:
   className: "alb"
   annotations:
     alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/tags: 
+    alb.ingress.kubernetes.io/tags: ""
     alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/certificate-arn: 
-    alb.ingress.kubernetes.io/group.name:
+    alb.ingress.kubernetes.io/certificate-arn: ""
+    alb.ingress.kubernetes.io/group.name: ""
   hosts:
     # Host should be the CNAME in Route53 that points to the ALB
     - host: api.staging.alerce.online
