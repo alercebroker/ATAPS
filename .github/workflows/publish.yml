@@ -17,18 +17,20 @@ jobs:
       -
         name: Call Dagger Publish Function
         uses: dagger/dagger-for-github@v5
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           version: "latest"
           verb: call
-          args: publish-images --rootDir=.. --username=${{github.actor}} --password=${{secrets.TAP_TOKEN}} --tags=rc
+          args: publish-images --rootDir=.. --username=${{github.actor}} --password=env:GH_TOKEN --tags=rc  # Usa env:GH_TOKEN aquí
           workdir: ./ci
       -
         name: Call Dagger Publish Helm Charts Function
         uses: dagger/dagger-for-github@v5
         env:  
-          GITHUB_TOKEN: ${{ secrets.TAP_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
         with:
           version: "latest"
           verb: call
-          args: publish-helm-charts --rootDir=.. --username=${{github.actor}} --password=${{secrets.TAP_TOKEN}}
+          args: publish-helm-charts --rootDir=.. --username=${{github.actor}} --password=env:GH_TOKEN  # Usa env:GH_TOKEN aquí
           workdir: ./ci

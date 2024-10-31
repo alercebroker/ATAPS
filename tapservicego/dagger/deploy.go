@@ -94,7 +94,7 @@ func (m *Tapservicego) helmValuesFile(container *dagger.Container) *dagger.Conta
 	sourcePrefix := strings.Split(*m.HelmValuesSource, ":")[0]
 	switch sourcePrefix {
 	case "ssm":
-		parameterName := strings.TrimPrefix(*m.HelmValuesSource, "tapservice-values-staging")
+		parameterName := strings.TrimPrefix(*m.HelmValuesSource, "ssm:")
 		value, err := getSsmValue(parameterName)
 		if err != nil {
 			log.Fatalf("Error getting SSM parameter: %v", err)
