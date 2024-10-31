@@ -22,7 +22,7 @@ jobs:
         with:
           version: "latest"
           verb: call
-          args: publish-images --rootDir=.. --username=${{github.actor}} --password=env:GH_TOKEN --tags=rc  # Usa env:GH_TOKEN aquí
+          args: publish-images --rootDir=.. --username=${{github.actor}} --password=env:GH_TOKEN --tags=rc
           workdir: ./ci
       -
         name: Call Dagger Publish Helm Charts Function
@@ -32,5 +32,5 @@ jobs:
         with:
           version: "latest"
           verb: call
-          args: publish-helm-charts --rootDir=.. --username=${{github.actor}} --password=env:GH_TOKEN  # Usa env:GH_TOKEN aquí
+          args: publish-helm-charts --rootDir=.. --username=${{github.actor}} --password=env:GH_TOKEN  
           workdir: ./ci
