@@ -1,9 +1,12 @@
----
 name: Publish
 on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+  packages: write
+  
 jobs:
   publish:
     name: publish
@@ -14,16 +17,20 @@ jobs:
       -
         name: Call Dagger Publish Function
         uses: dagger/dagger-for-github@v5
+        env:
+          GH_TOKEN: ${{ secrets.TAP_TOKEN }}
         with:
           version: "latest"
           verb: call
-          args: publish-images --rootDir=.. --username=${{github.actor}} --password=${{secrets.GITHUB_TOKEN}} --tags=rc
+          args: publish-images --rootDir=.. --username=alercebroker --password=env:GH_TOKEN --tags=rc
           workdir: ./ci
       -
         name: Call Dagger Publish Helm Charts Function
         uses: dagger/dagger-for-github@v5
+        env:  
+          GH_TOKEN: ${{ secrets.TAP_TOKEN }} 
         with:
           version: "latest"
           verb: call
-          args: publish-helm-charts --rootDir=.. --username=${{github.actor}} --password=${{github.token}}
+          args: publish-helm-charts --rootDir=.. --username=alercebroker --password=env:GH_TOKEN  
           workdir: ./ci
