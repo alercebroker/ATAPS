@@ -64,6 +64,7 @@ func (m *Tapservicego) Deploy(
 		From("alpine/k8s:1.31.0").
 		With(withAWSCredentials).
 		With(m.helmValuesFile).
+		WithExec([]string{"sh", "-c", fmt.Sprintf("aws eks update-kubeconfig --region us-east-1 --name %s --alias %s", "staging", "staging")}).
 		WithWorkdir("/usr/src/app").
 		WithExec([]string{"helm", "registry", "login", "-u", username, "-p", pwd, "ghcr.io"}).
 		With(m.upgradeCommand(ctx))
