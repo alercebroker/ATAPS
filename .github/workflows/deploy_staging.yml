@@ -4,6 +4,10 @@ on:
   release:
     types: [prereleased]
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   deploy-staging:
     name: deploy-staging
