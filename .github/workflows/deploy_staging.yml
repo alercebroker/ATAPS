@@ -3,6 +3,7 @@ name: Deploy Staging
 on:
   release:
     types: [prereleased]
+  workflow_dispatch:
 
 permissions:
   id-token: write
