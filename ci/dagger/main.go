@@ -58,54 +58,23 @@ func (m *Ci) DeployHelmCharts(
 	version string,
 	dryRun bool,
 ) (string, error) {
-	// var result string
-	// container := m.deployTapService(username, password, helmValues, version, dryRun)
-	// output, err := container.Stdout(ctx)
-	// if err != nil {
-	// 	return "", err
-	// }
-	// result += output + "\n"
-	// return result, nil
 	var result string
-	container, err := m.deployTapService(username, password, helmValues, version, dryRun)
-	if err != nil {
-		return "", fmt.Errorf("deploy failed: %w", err)
-	}
-
+	container := m.deployTapService(username, password, helmValues, version, dryRun)
 	output, err := container.Stdout(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to get deployment output: %w", err)
+		return "", err
 	}
-
 	result += output + "\n"
-
 	return result, nil
 }
 
 func (m *Ci) deployTapService(username string, password *Secret, helmValues *string, version string, dryRun bool) *Container {
-	// opts := TapservicegoDeployOpts{
-	// 	HelmValues: *helmValues,
-	// }
-	// url := "ghcr.io/%s/tapservice-chart/tapservice:%s"
-	// url = fmt.Sprintf(url, username, version)
-	// return dag.Tapservicego().Deploy(username, password, url, dryRun, opts)
-
-	helmValuesStr := ""
-	if helmValues != nil {
-		helmValuesStr = *helmValues
-	}
-
 	opts := TapservicegoDeployOpts{
-		HelmValues: helmValuesStr,
+		HelmValues: *helmValues,
 	}
-	url := fmt.Sprintf("ghcr.io/%s/tapservice-chart/tapservice:%s", username, version)
-
-	container := dag.Tapservicego().Deploy(username, password, url, dryRun, opts)
-	if container == nil {
-		return nil, fmt.Errorf("failed to create deployment container")
-	}
-
-	return container, nil
+	url := "ghcr.io/%s/tapservice-chart/tapservice:%s"
+	url = fmt.Sprintf(url, username, version)
+	return dag.Tapservicego().Deploy(username, password, url, dryRun, opts)
 
 }
 
