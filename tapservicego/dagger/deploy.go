@@ -36,6 +36,7 @@ func (m *Tapservicego) PublishHelmChart(
 	}
 	registry := fmt.Sprintf("oci://ghcr.io/%s/tapservice-chart", *ghOrg)
 	return container.
+		With(withAWSCredentials).
 		WithExec([]string{"helm", "registry", "login", "-u", username, "-p", pwd, "ghcr.io"}).
 		WithExec([]string{"helm", "push", fmt.Sprintf("/usr/src/tapservice-%s.tgz", version), registry}).
 		Stdout(ctx)
