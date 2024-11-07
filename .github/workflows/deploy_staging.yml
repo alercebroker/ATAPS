@@ -33,5 +33,5 @@ jobs:
         with:
           version: "latest"
           verb: call
-          args: deploy-helm-charts --username=tapservice-chart --password=env:GH_TOKEN --helm-values=ssm:tapservice-values-staging --version=24.9.0 --dry-run=true
+          args: deploy-helm-charts --username=alercebroker --password=env:GH_TOKEN --helm-values=ssm:tapservice-values-staging --version=24.9.0 --dry-run=true
           workdir: ./ci
