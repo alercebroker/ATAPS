@@ -72,9 +72,17 @@ func (m *Ci) deployTapService(username string, password *Secret, helmValues *str
 	opts := TapservicegoDeployOpts{
 		HelmValues: *helmValues,
 	}
+	fmt.Print("####################")
+	fmt.Print(username)
+	fmt.Print(helmValues)
+	fmt.Print(version)
+	fmt.Print(dryRun)
+	fmt.Print("####################")
+
 	url := "ghcr.io/%s/tapservice-chart/tapservice:%s"
 	url = fmt.Sprintf(url, username, version)
 	return dag.Tapservicego().Deploy(username, password, url, dryRun, opts)
+
 }
 
 func (m *Ci) publishTapservice(

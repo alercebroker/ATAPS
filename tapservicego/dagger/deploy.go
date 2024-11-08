@@ -36,6 +36,7 @@ func (m *Tapservicego) PublishHelmChart(
 	}
 	registry := fmt.Sprintf("oci://ghcr.io/%s/tapservice-chart", *ghOrg)
 	return container.
+		With(withAWSCredentials).
 		WithExec([]string{"helm", "registry", "login", "-u", username, "-p", pwd, "ghcr.io"}).
 		WithExec([]string{"helm", "push", fmt.Sprintf("/usr/src/tapservice-%s.tgz", version), registry}).
 		Stdout(ctx)
@@ -63,6 +64,7 @@ func (m *Tapservicego) Deploy(
 	return dag.Container().
 		From("alpine/k8s:1.31.0").
 		With(withAWSCredentials).
+		WithExec([]string{"sh", "-c", fmt.Sprintf("aws eks update-kubeconfig --region us-east-1 --name %s --alias %s", "staging", "staging")}).
 		With(m.helmValuesFile).
 		WithWorkdir("/usr/src/app").
 		WithExec([]string{"helm", "registry", "login", "-u", username, "-p", pwd, "ghcr.io"}).
